@@ -13,34 +13,33 @@ serve(async (req) => {
 
   try {
     const { userPhoto, clothingData, userData } = await req.json();
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
+    const groqApiKey = Deno.env.get('GROQ_API_KEY');
+    if (!groqApiKey) {
+      throw new Error('Groq API key not configured');
     }
 
     console.log('Analyzing fit for user:', userData);
 
     // First, analyze the user's body from the photo
-    const bodyAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const bodyAnalysisResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${groqApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           {
             role: 'system',
-            content: `You are an AI clothing fit specialist. Analyze the user's body proportions from their photo and their provided measurements (height: ${userData.height}cm, weight: ${userData.weight}kg, preferred size: ${userData.preferredSize}) to determine how clothing will fit them.`
+            content: `You are an AI clothing fit specialist. Analyze the user's body proportions from their photo and their provided measurements (height: ${userData.height}in, weight: ${userData.weight}lbs, preferred size: ${userData.preferredSize}) to determine how clothing will fit them.`
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `Please analyze this person's body proportions and estimate their clothing measurements. Consider their height (${userData.height}cm) and weight (${userData.weight}kg). Focus on: shoulder width, chest/bust circumference, waist size, body type (slim, regular, athletic, etc.).`
+                text: `Please analyze this person's body proportions and estimate their clothing measurements. Consider their height (${userData.height}in) and weight (${userData.weight}lbs). Focus on: shoulder width, chest/bust circumference, waist size, body type (slim, regular, athletic, etc.).`
               },
               {
                 type: 'image_url',
@@ -56,7 +55,7 @@ serve(async (req) => {
     });
 
     if (!bodyAnalysisResponse.ok) {
-      throw new Error(`OpenAI API error: ${bodyAnalysisResponse.status}`);
+      throw new Error(`Groq API error: ${bodyAnalysisResponse.status}`);
     }
 
     const bodyAnalysis = await bodyAnalysisResponse.json();
@@ -65,14 +64,14 @@ serve(async (req) => {
     console.log('Body analysis:', bodyAssessment);
 
     // Now analyze the clothing item and compare with user measurements
-    const fitAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const fitAnalysisResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${groqApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           {
             role: 'system',
@@ -92,8 +91,8 @@ USER BODY ANALYSIS:
 ${bodyAssessment}
 
 USER MEASUREMENTS:
-Height: ${userData.height}cm
-Weight: ${userData.weight}kg
+Height: ${userData.height}in
+Weight: ${userData.weight}lbs
 Preferred Size: ${userData.preferredSize}
 
 Please provide:
@@ -118,7 +117,7 @@ Respond in JSON format:
     });
 
     if (!fitAnalysisResponse.ok) {
-      throw new Error(`OpenAI fit analysis error: ${fitAnalysisResponse.status}`);
+      throw new Error(`Groq fit analysis error: ${fitAnalysisResponse.status}`);
     }
 
     const fitAnalysis = await fitAnalysisResponse.json();
