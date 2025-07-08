@@ -1,4 +1,6 @@
+// @ts-ignore
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -13,6 +15,7 @@ serve(async (req) => {
 
   try {
     const { userPhoto, clothingData, userData } = await req.json();
+    // @ts-ignore
     const groqApiKey = Deno.env.get('GROQ_API_KEY');
     if (!groqApiKey) {
       throw new Error('Groq API key not configured');
@@ -32,22 +35,11 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an AI clothing fit specialist. Analyze the user's body proportions from their photo and their provided measurements (height: ${userData.height}in, weight: ${userData.weight}lbs, preferred size: ${userData.preferredSize}) to determine how clothing will fit them.`
+            content: `You are an AI clothing fit specialist. Analyze the user's body proportions from their provided measurements (height: ${userData.height}in, weight: ${userData.weight}lbs, preferred size: ${userData.preferredSize}) to determine how clothing will fit them.`
           },
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Please analyze this person's body proportions and estimate their clothing measurements. Consider their height (${userData.height}in) and weight (${userData.weight}lbs). Focus on: shoulder width, chest/bust circumference, waist size, body type (slim, regular, athletic, etc.).`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: userPhoto
-                }
-              }
-            ]
+            content: `Please analyze this person's body proportions and estimate their clothing measurements. Consider their height (${userData.height}in) and weight (${userData.weight}lbs). Focus on: shoulder width, chest/bust circumference, waist size, body type (slim, regular, athletic, etc.).`
           }
         ],
         max_tokens: 500
