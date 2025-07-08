@@ -32,10 +32,11 @@ const Index = () => {
   const { toast } = useToast();
   const [clothingUrl, setClothingUrl] = useState('');
   const [clothingData, setClothingData] = useState<ClothingData | null>(null);
+  // Store height in inches and weight in pounds
   const [userData, setUserData] = useState<UserData>({
     photo: '',
-    height: 170,
-    weight: 70,
+    height: Math.round(170 / 2.54), // convert 170cm to inches
+    weight: Math.round(70 * 2.20462), // convert 70kg to lbs
     preferredSize: 'M'
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -396,24 +397,24 @@ const Index = () => {
                 </CardHeader>
                 <CardContent className="space-y-8">
                   <div>
-                    <Label className="text-base">Height: <span className="font-bold text-blue-700">{userData.height} cm</span></Label>
+                    <Label className="text-base">Height: <span className="font-bold text-blue-700">{userData.height} in</span></Label>
                     <Slider
                       value={[userData.height]}
                       onValueChange={(value) => setUserData(prev => ({ ...prev, height: value[0] }))}
-                      max={220}
-                      min={140}
+                      max={87} // 7'3"
+                      min={55} // 4'7"
                       step={1}
                       className="mt-3 glassmorphism-slider"
                       disabled={currentStep < 3}
                     />
                   </div>
                   <div>
-                    <Label className="text-base">Weight: <span className="font-bold text-blue-700">{userData.weight} kg</span></Label>
+                    <Label className="text-base">Weight: <span className="font-bold text-blue-700">{userData.weight} lbs</span></Label>
                     <Slider
                       value={[userData.weight]}
                       onValueChange={(value) => setUserData(prev => ({ ...prev, weight: value[0] }))}
-                      max={150}
-                      min={40}
+                      max={330}
+                      min={90}
                       step={1}
                       className="mt-3 glassmorphism-slider"
                       disabled={currentStep < 3}
