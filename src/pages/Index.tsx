@@ -49,6 +49,8 @@ const Index = () => {
   const [analyzeProgress, setAnalyzeProgress] = useState(0);
   const analyzeProgressRef = React.useRef<number>(0);
   const analyzeIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const uploadInputRef = React.useRef<HTMLInputElement>(null);
+  const cameraInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleUrlSubmit = async () => {
     if (!clothingUrl) {
@@ -329,33 +331,41 @@ const Index = () => {
                 <CardContent className="space-y-6">
                   <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-white/40 backdrop-blur-md shadow-inner flex flex-col items-center gap-4">
                     <input
+                      ref={uploadInputRef}
                       type="file"
                       accept="image/*"
                       onChange={handlePhotoUpload}
                       className="hidden"
-                      id="photo-upload"
                       disabled={currentStep < 2}
                     />
                     <input
+                      ref={cameraInputRef}
                       type="file"
                       accept="image/*"
                       capture="environment"
                       onChange={handlePhotoUpload}
                       className="hidden"
-                      id="camera-capture"
                       disabled={currentStep < 2}
                     />
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                      <label htmlFor="photo-upload" className="cursor-pointer inline-block">
-                        <Button type="button" variant="outline" className="px-6 py-3 text-lg">
-                          Upload Photo
-                        </Button>
-                      </label>
-                      <label htmlFor="camera-capture" className="cursor-pointer inline-block">
-                        <Button type="button" variant="outline" className="px-6 py-3 text-lg">
-                          Take Photo
-                        </Button>
-                      </label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="px-6 py-3 text-lg"
+                        onClick={() => uploadInputRef.current?.click()}
+                        disabled={currentStep < 2}
+                      >
+                        Upload Photo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="px-6 py-3 text-lg"
+                        onClick={() => cameraInputRef.current?.click()}
+                        disabled={currentStep < 2}
+                      >
+                        Take Photo
+                      </Button>
                     </div>
                     {userData.photo ? (
                       <div className="space-y-2 mt-4">
