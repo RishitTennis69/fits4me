@@ -22,7 +22,6 @@ interface ClothingData {
 }
 
 interface UserData {
-  photo: string;
   height: number;
   weight: number;
   preferredSize: string;
@@ -34,7 +33,6 @@ const Index = () => {
   const [clothingData, setClothingData] = useState<ClothingData | null>(null);
   // Store height in inches and weight in pounds
   const [userData, setUserData] = useState<UserData>({
-    photo: '',
     height: Math.round(170 / 2.54), // convert 170cm to inches
     weight: Math.round(70 * 2.20462), // convert 70kg to lbs
     preferredSize: 'M'
@@ -44,7 +42,6 @@ const Index = () => {
     fitScore: number;
     recommendation: string;
     sizeAdvice: string;
-    overlay: string;
   } | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [analyzeProgress, setAnalyzeProgress] = useState(0);
@@ -52,6 +49,8 @@ const Index = () => {
   const analyzeIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const cameraInputRef = React.useRef<HTMLInputElement>(null);
+  const analyzeFitProgressRef = React.useRef<number>(0);
+  const analyzeFitIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const handleUrlSubmit = async () => {
     if (!clothingUrl) {
@@ -137,20 +136,8 @@ const Index = () => {
     }
   };
 
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setUserData(prev => ({ ...prev, photo: e.target?.result as string }));
-        setCurrentStep(3);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleAnalyze = async () => {
-    if (!clothingData || !userData.photo) {
+    if (!clothingData || !userData.height) {
       toast({
         title: "Missing Data",
         description: "Please complete all steps before analyzing",
@@ -160,14 +147,24 @@ const Index = () => {
     }
 
     setIsAnalyzing(true);
+    setAnalyzeProgress(5); // Start progress
+    analyzeFitProgressRef.current = 5;
+    if (analyzeFitIntervalRef.current) clearInterval(analyzeFitIntervalRef.current);
+    analyzeFitIntervalRef.current = setInterval(() => {
+      analyzeFitProgressRef.current = Math.min(analyzeFitProgressRef.current + Math.random() * 0.5 + 0.2, 92);
+      setAnalyzeProgress(analyzeFitProgressRef.current);
+    }, 120);
     
     try {
-      // Call Supabase edge function for AI fit analysis
+      // Call Supabase edge function for AI fit analysis (text model only)
       const { data, error } = await supabase.functions.invoke('analyze-fit', {
-        body: { 
-          userPhoto: userData.photo,
+        body: {
           clothingData: clothingData,
-          userData: userData
+          userData: {
+            height: userData.height,
+            weight: userData.weight,
+            preferredSize: userData.preferredSize
+          }
         }
       });
 
@@ -184,24 +181,37 @@ const Index = () => {
         fitScore: analysis.fitScore,
         recommendation: analysis.recommendation,
         sizeAdvice: analysis.sizeAdvice,
-        overlay: userData.photo // For now, show original photo - future enhancement could generate actual overlay
       });
-      
+      setAnalyzeProgress(100);
+      analyzeFitProgressRef.current = 100;
+      if (analyzeFitIntervalRef.current) {
+        clearInterval(analyzeFitIntervalRef.current);
+        analyzeFitIntervalRef.current = null;
+      }
+      setTimeout(() => {
+        setIsAnalyzing(false);
+        setAnalyzeProgress(0);
+        analyzeFitProgressRef.current = 0;
+      }, 500);
       setCurrentStep(4);
-      
       toast({
         title: "Analysis Complete",
         description: "Your AI-powered fit analysis is ready!"
       });
     } catch (error) {
+      setAnalyzeProgress(0);
+      analyzeFitProgressRef.current = 0;
+      if (analyzeFitIntervalRef.current) {
+        clearInterval(analyzeFitIntervalRef.current);
+        analyzeFitIntervalRef.current = null;
+      }
+      setIsAnalyzing(false);
       console.error('Error analyzing fit:', error);
       toast({
         title: "Analysis Failed",
         description: error instanceof Error ? error.message : "Failed to analyze clothing fit",
         variant: "destructive"
       });
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
@@ -321,103 +331,41 @@ const Index = () => {
           )}
           {currentStep === 2 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
-              {/* Step 2: Photo Upload */}
-              <Card className="glassmorphism-card p-10 text-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3 text-green-700">
-                    <Upload className="h-6 w-6 text-green-500" />
-                    Step 2: Upload Your Photo
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-white/40 backdrop-blur-md shadow-inner flex flex-col items-center gap-4">
-                    <input
-                      ref={uploadInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                      disabled={currentStep < 2}
-                    />
-                    <input
-                      ref={cameraInputRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                      disabled={currentStep < 2}
-                    />
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="px-6 py-3 text-lg"
-                        onClick={() => uploadInputRef.current?.click()}
-                        disabled={currentStep < 2}
-                      >
-                        Upload Photo
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="px-6 py-3 text-lg"
-                        onClick={() => cameraInputRef.current?.click()}
-                        disabled={currentStep < 2}
-                      >
-                        Take Photo
-                      </Button>
-                    </div>
-                    {userData.photo ? (
-                      <div className="space-y-2 mt-4">
-                        <img src={userData.photo} alt="Your photo" className="max-h-32 mx-auto rounded-xl shadow-lg border-4 border-green-200" />
-                        <p className="text-base text-green-700 font-semibold">Photo uploaded!</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 mt-4">
-                        <Upload className="h-10 w-10 mx-auto text-gray-400" />
-                        <p className="text-gray-600 font-medium">Upload or take a photo to continue</p>
-                        <p className="text-xs text-gray-400">PNG, JPG up to 10MB</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-          {currentStep === 3 && (
-            <div className="w-full max-w-2xl animate-fade-in-up">
-              {/* Step 3: Measurements */}
+              {/* Step 2: Measurements */}
               <Card className="glassmorphism-card p-10 text-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-purple-700">
                     <User className="h-6 w-6 text-purple-500" />
-                    Step 3: Your Measurements
+                    Step 2: Your Measurements
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-8">
                   <div>
-                    <Label className="text-base">Height: <span className="font-bold text-blue-700">{userData.height} in</span></Label>
-                    <Slider
-                      value={[userData.height]}
-                      onValueChange={(value) => setUserData(prev => ({ ...prev, height: value[0] }))}
-                      max={87} // 7'3"
-                      min={55} // 4'7"
-                      step={1}
-                      className="mt-3 glassmorphism-slider"
-                      disabled={currentStep < 3}
+                    <Label className="text-base" htmlFor="height-input">Height (inches):</Label>
+                    <Input
+                      id="height-input"
+                      type="number"
+                      value={userData.height}
+                      onChange={e => {
+                        const val = Math.max(0, Number(e.target.value));
+                        setUserData(prev => ({ ...prev, height: val }));
+                      }}
+                      className="mt-2 glassmorphism-input text-xl py-2 px-4 w-40"
+                      disabled={currentStep < 2}
                     />
                   </div>
                   <div>
-                    <Label className="text-base">Weight: <span className="font-bold text-blue-700">{userData.weight} lbs</span></Label>
-                    <Slider
-                      value={[userData.weight]}
-                      onValueChange={(value) => setUserData(prev => ({ ...prev, weight: value[0] }))}
-                      max={330}
-                      min={90}
-                      step={1}
-                      className="mt-3 glassmorphism-slider"
-                      disabled={currentStep < 3}
+                    <Label className="text-base" htmlFor="weight-input">Weight (lbs):</Label>
+                    <Input
+                      id="weight-input"
+                      type="number"
+                      value={userData.weight}
+                      onChange={e => {
+                        const val = Math.max(0, Number(e.target.value));
+                        setUserData(prev => ({ ...prev, weight: val }));
+                      }}
+                      className="mt-2 glassmorphism-input text-xl py-2 px-4 w-40"
+                      disabled={currentStep < 2}
                     />
                   </div>
                   <div>
@@ -429,7 +377,7 @@ const Index = () => {
                           variant={userData.preferredSize === size ? "default" : "outline"}
                           size="sm"
                           onClick={() => setUserData(prev => ({ ...prev, preferredSize: size }))}
-                          disabled={currentStep < 3}
+                          disabled={currentStep < 2}
                           className={`rounded-full px-4 py-2 font-semibold transition-all duration-200 ${userData.preferredSize === size ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg scale-105' : 'bg-white/60 text-blue-700 border-blue-200 hover:bg-blue-50'}`}
                         >
                           {size}
@@ -437,7 +385,7 @@ const Index = () => {
                       ))}
                     </div>
                   </div>
-                  {currentStep >= 3 && (
+                  {currentStep >= 2 && (
                     <Button 
                       onClick={handleAnalyze}
                       disabled={isAnalyzing}
@@ -493,22 +441,6 @@ const Index = () => {
                     </div>
                     <p className="text-base text-gray-600">Fit Score</p>
                     <Progress value={analysisResult.fitScore} className="mt-3 h-5" />
-                  </div>
-                  <Separator className="my-6" />
-                  {/* Virtual Overlay */}
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-lg text-blue-700">Virtual Try-On</h4>
-                    <div className="relative">
-                      <img 
-                        src={analysisResult.overlay} 
-                        alt="Virtual try-on" 
-                        className="w-full h-72 object-cover rounded-2xl shadow-lg border-4 border-blue-100"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl" />
-                      <Badge className="absolute top-3 right-3 bg-green-600 text-white px-4 py-2 rounded-full shadow-lg text-base">
-                        Size {userData.preferredSize}
-                      </Badge>
-                    </div>
                   </div>
                   <Separator className="my-6" />
                   {/* Recommendations */}

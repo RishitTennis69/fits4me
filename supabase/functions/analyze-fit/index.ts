@@ -86,6 +86,8 @@ Available Sizes: ${clothingData.sizes?.join(', ')}
 Size Chart: ${JSON.stringify(clothingData.sizeChart)}
 Description: ${clothingData.description}
 Material: ${clothingData.material}
+Images: ${(clothingData.images && clothingData.images.length > 0) ? clothingData.images.join(', ') : 'None'}
+Full Page Content: ${clothingData.scrapedContent || 'N/A'}
 
 USER BODY ANALYSIS:
 ${bodyAssessment}
