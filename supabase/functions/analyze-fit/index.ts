@@ -18,13 +18,15 @@ serve(async (req) => {
     const { userPhoto, clothingData, userData } = await req.json();
     // @ts-ignore Deno types for VSCode/TypeScript
     const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
-    if (!claudeApiKey) {
-      throw new Error('Claude API key not configured');
-    }
+    // @ts-ignore Deno types for VSCode/TypeScript
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+
+    if (!claudeApiKey) throw new Error('Claude API key not configured');
+    if (!openaiApiKey) throw new Error('OpenAI API key not configured');
 
     console.log('Analyzing fit for user:', userData);
 
-    // First, analyze the user's body from the photo
+    // 1. Claude 4 Sonnet: Analyze the user's body from the photo
     const bodyAnalysisResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -33,7 +35,7 @@ serve(async (req) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-opus-20240229',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1000,
         messages: [
           {
@@ -65,7 +67,7 @@ serve(async (req) => {
 
     console.log('Body analysis:', bodyAssessment);
 
-    // Now analyze the clothing item and compare with user measurements
+    // 2. Claude 4 Sonnet: Fit analysis
     const fitAnalysisResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -74,7 +76,7 @@ serve(async (req) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-opus-20240229',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1500,
         messages: [
           {
@@ -112,13 +114,38 @@ serve(async (req) => {
       analysisResult = {
         fitScore: 85,
         recommendation: content.substring(0, 200),
-        sizeAdvice: `Based on your measurements (${userData.height}cm, ${userData.weight}kg), size ${userData.preferredSize} should work well.`,
+        sizeAdvice: `Based on your measurements (${userData.height}in, ${userData.weight}lbs), size ${userData.preferredSize} should work well.`,
         alternativeSize: null,
         fitDetails: content
       };
     }
 
     console.log('Fit analysis result:', analysisResult);
+
+    // 3. GPT-4o: Generate virtual try-on image
+    const imageGenResponse = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: "dall-e-3",
+        prompt: `A realistic photo showing a person wearing ${clothingData.name}. The person should match the body type and proportions described in the analysis. The clothing should fit naturally and look like a real person wearing this item. Style: photorealistic, natural lighting, high quality.`,
+        n: 1,
+        size: "1024x1024",
+        quality: "hd"
+      }),
+    });
+    
+    let overlayImageUrl = null;
+    if (imageGenResponse.ok) {
+      const imageGenData = await imageGenResponse.json();
+      overlayImageUrl = imageGenData?.data?.[0]?.url ?? null;
+    } else {
+      console.error('GPT-4o image generation failed:', imageGenResponse.status);
+      throw new Error(`GPT-4o image generation failed: ${imageGenResponse.status}`);
+    }
 
     return new Response(JSON.stringify({
       success: true,
@@ -128,7 +155,8 @@ serve(async (req) => {
         sizeAdvice: analysisResult.sizeAdvice || `Size ${userData.preferredSize} recommended`,
         alternativeSize: analysisResult.alternativeSize,
         fitDetails: analysisResult.fitDetails || '',
-        bodyAnalysis: bodyAssessment
+        bodyAnalysis: bodyAssessment,
+        overlay: overlayImageUrl // Virtual try-on image URL
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
