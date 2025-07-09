@@ -17,49 +17,47 @@ serve(async (req) => {
   try {
     const { userPhoto, clothingData, userData } = await req.json();
     // @ts-ignore Deno types for VSCode/TypeScript
-    const groqApiKey = Deno.env.get('GROQ_API_KEY');
-    if (!groqApiKey) {
-      throw new Error('Groq API key not configured');
+    const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
+    if (!claudeApiKey) {
+      throw new Error('Claude API key not configured');
     }
 
     console.log('Analyzing fit for user:', userData);
 
     // First, analyze the user's body from the photo
-    const bodyAnalysisResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const bodyAnalysisResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${groqApiKey}`,
-        'Content-Type': 'application/json',
+        'x-api-key': claudeApiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'claude-3-opus-20240229',
+        max_tokens: 1000,
         messages: [
-          {
-            role: 'system',
-            content: `You are an AI clothing fit specialist. Analyze the user's body proportions from their photo and their provided measurements (height: ${userData.height}in, weight: ${userData.weight}lbs, preferred size: ${userData.preferredSize}) to determine how clothing will fit them.`
-          },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `Please analyze this person's body proportions and estimate their clothing measurements. Consider their height (${userData.height}in) and weight (${userData.weight}lbs). Focus on: shoulder width, chest/bust circumference, waist size, body type (slim, regular, athletic, etc.).`
+                text: `You are an AI clothing fit specialist. Analyze the user's body proportions from their photo and their provided measurements (height: ${userData.height}in, weight: ${userData.weight}lbs, preferred size: ${userData.preferredSize}) to determine how clothing will fit them. Please analyze this person's body proportions and estimate their clothing measurements. Focus on: shoulder width, chest/bust circumference, waist size, body type (slim, regular, athletic, etc.).`
               },
               {
-                type: 'image_url',
-                image_url: {
+                type: 'image',
+                source: {
+                  type: 'url',
                   url: userPhoto
                 }
               }
             ]
           }
-        ],
-        max_tokens: 500
+        ]
       }),
     });
 
     if (!bodyAnalysisResponse.ok) {
-      throw new Error(`Groq API error: ${bodyAnalysisResponse.status}`);
+      throw new Error(`Claude API error: ${bodyAnalysisResponse.status}`);
     }
 
     const bodyAnalysis = await bodyAnalysisResponse.json();
@@ -68,60 +66,32 @@ serve(async (req) => {
     console.log('Body analysis:', bodyAssessment);
 
     // Now analyze the clothing item and compare with user measurements
-    const fitAnalysisResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const fitAnalysisResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${groqApiKey}`,
-        'Content-Type': 'application/json',
+        'x-api-key': claudeApiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'claude-3-opus-20240229',
+        max_tokens: 1500,
         messages: [
           {
-            role: 'system',
-            content: 'You are an expert clothing fit analyst. Based on the user\'s body analysis and the clothing item details, provide a comprehensive fit assessment.'
-          },
-          {
             role: 'user',
-            content: `
-CLOTHING ITEM:
-Name: ${clothingData.name}
-Available Sizes: ${clothingData.sizes?.join(', ')}
-Size Chart: ${JSON.stringify(clothingData.sizeChart)}
-Description: ${clothingData.description}
-Material: ${clothingData.material}
-
-USER BODY ANALYSIS:
-${bodyAssessment}
-
-USER MEASUREMENTS:
-Height: ${userData.height}in
-Weight: ${userData.weight}lbs
-Preferred Size: ${userData.preferredSize}
-
-Please provide:
-1. Fit Score (0-100) for the preferred size ${userData.preferredSize}
-2. Detailed fit recommendation
-3. Alternative size suggestions if needed
-4. Specific advice about how this item will fit (loose, tight, perfect, etc.)
-
-Respond in JSON format:
-{
-  "fitScore": number,
-  "recommendation": "string",
-  "sizeAdvice": "string",
-  "alternativeSize": "string or null",
-  "fitDetails": "string"
-}
-            `
+            content: [
+              {
+                type: 'text',
+                text: `CLOTHING ITEM:\nName: ${clothingData.name}\nAvailable Sizes: ${clothingData.sizes?.join(', ')}\nSize Chart: ${JSON.stringify(clothingData.sizeChart)}\nDescription: ${clothingData.description}\nMaterial: ${clothingData.material}\n\nUSER BODY ANALYSIS:\n${bodyAssessment}\n\nUSER MEASUREMENTS:\nHeight: ${userData.height}in\nWeight: ${userData.weight}lbs\nPreferred Size: ${userData.preferredSize}\n\nPlease provide:\n1. Fit Score (0-100) for the preferred size ${userData.preferredSize}\n2. Detailed fit recommendation\n3. Alternative size suggestions if needed\n4. Specific advice about how this item will fit (loose, tight, perfect, etc.)\n\nRespond in JSON format:\n{\n  \"fitScore\": number,\n  \"recommendation\": \"string\",\n  \"sizeAdvice\": \"string\",\n  \"alternativeSize\": \"string or null\",\n  \"fitDetails\": \"string\"\n}`
+              }
+            ]
           }
-        ],
-        max_tokens: 800
+        ]
       }),
     });
 
     if (!fitAnalysisResponse.ok) {
-      throw new Error(`Groq fit analysis error: ${fitAnalysisResponse.status}`);
+      throw new Error(`Claude fit analysis error: ${fitAnalysisResponse.status}`);
     }
 
     const fitAnalysis = await fitAnalysisResponse.json();
