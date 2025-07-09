@@ -26,6 +26,43 @@ serve(async (req) => {
 
     console.log('Analyzing fit for user:', userData);
 
+    // Check if userPhoto is base64 or URL and handle accordingly
+    let imageContent;
+    if (userPhoto.startsWith('data:image')) {
+      // It's already a base64 image
+      imageContent = {
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: userPhoto.split(';')[0].split(':')[1],
+          data: userPhoto.split(',')[1]
+        }
+      };
+    } else {
+      // It's a URL, try to convert to base64
+      try {
+        const imageResponse = await fetch(userPhoto);
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+        }
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+        const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+        
+        imageContent = {
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: contentType,
+            data: base64
+          }
+        };
+      } catch (imageError) {
+        console.error('Failed to convert image to base64:', imageError);
+        throw new Error(`Failed to process image: ${imageError.message}`);
+      }
+    }
+
     // 1. Claude 4 Sonnet: Analyze the user's body from the photo
     const bodyAnalysisResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -45,13 +82,7 @@ serve(async (req) => {
                 type: 'text',
                 text: `You are an AI clothing fit specialist. Analyze the user's body proportions from their photo and their provided measurements (height: ${userData.height}in, weight: ${userData.weight}lbs, preferred size: ${userData.preferredSize}) to determine how clothing will fit them. Please analyze this person's body proportions and estimate their clothing measurements. Focus on: shoulder width, chest/bust circumference, waist size, body type (slim, regular, athletic, etc.).`
               },
-              {
-                type: 'image',
-                source: {
-                  type: 'url',
-                  url: userPhoto
-                }
-              }
+              imageContent
             ]
           }
         ]
