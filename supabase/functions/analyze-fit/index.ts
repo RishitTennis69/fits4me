@@ -260,12 +260,10 @@ Respond with this exact JSON structure (no other text):
     console.log('Starting virtual try-on image generation...');
     console.log('Clothing data for image generation:', clothingData);
     
-    // Build a more personalized prompt
-    const personDesc = `A person with body type and proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height}in, weight: ${userData.weight}lbs)`;
-    const clothingDesc = `wearing the following item: ${clothingData.name}, described as: ${clothingData.description}. Material: ${clothingData.material}. Color/style: ${clothingData.color || 'N/A'}.`;
-    const prompt = `${personDesc}, ${clothingDesc} The clothing should fit naturally and look realistic. Style: photorealistic, natural lighting, high quality.`;
+    // Build a highly specific mannequin prompt
+    const mannequinPrompt = `A photorealistic image of a faceless mannequin with body proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height} inches, weight: ${userData.weight} lbs), wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${clothingData.description}. Color: ${clothingData.color || 'N/A'}. Material: ${clothingData.material}. The fit should be realistic for the given size and body. Neutral background. No text, no logos, no visible brand names.`;
     
-    console.log('DALL-E prompt:', prompt);
+    console.log('DALL-E mannequin prompt:', mannequinPrompt);
     
     const imageGenResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -275,7 +273,7 @@ Respond with this exact JSON structure (no other text):
       },
       body: JSON.stringify({
         model: "dall-e-3",
-        prompt: prompt,
+        prompt: mannequinPrompt,
         n: 1,
         size: "1024x1024",
         quality: "hd"
