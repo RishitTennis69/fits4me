@@ -173,12 +173,22 @@ serve(async (req) => {
           }
           // Try to parse the JSON
           analysisResult = JSON.parse(jsonBlock);
+          // If analysisResult is a string (double-encoded), parse again
+          if (typeof analysisResult === 'string') {
+            try {
+              analysisResult = JSON.parse(analysisResult);
+              console.log('Parsed double-encoded JSON from Claude.');
+            } catch (e) {
+              aiMessage = 'AI fit analysis returned invalid JSON.';
+              analysisResult = null;
+            }
+          }
           console.log('Successfully parsed JSON:', analysisResult);
           // Defensive: Validate fitScore
           let fitScoreValid = false;
-          if (typeof analysisResult.fitScore === 'number' && analysisResult.fitScore >= 0 && analysisResult.fitScore <= 100) {
+          if (typeof analysisResult?.fitScore === 'number' && analysisResult.fitScore >= 0 && analysisResult.fitScore <= 100) {
             fitScoreValid = true;
-          } else if (typeof analysisResult.fitScore === 'string') {
+          } else if (typeof analysisResult?.fitScore === 'string') {
             const num = parseInt(analysisResult.fitScore);
             if (!isNaN(num) && num >= 0 && num <= 100) {
               analysisResult.fitScore = num;
