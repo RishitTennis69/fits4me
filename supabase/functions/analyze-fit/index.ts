@@ -96,7 +96,8 @@ serve(async (req) => {
     }
 
     const bodyAnalysis = await bodyAnalysisResponse.json();
-    const bodyAssessment = bodyAnalysis.choices[0]?.message?.content || '';
+    console.log('Body analysis response structure:', JSON.stringify(bodyAnalysis, null, 2));
+    const bodyAssessment = bodyAnalysis.choices?.[0]?.message?.content || '';
 
     console.log('Body analysis:', bodyAssessment);
 
@@ -132,11 +133,14 @@ serve(async (req) => {
     }
 
     const fitAnalysis = await fitAnalysisResponse.json();
+    console.log('Fit analysis response structure:', JSON.stringify(fitAnalysis, null, 2));
+    
     let analysisResult;
 
     try {
       // Try to parse JSON response
-      const content = fitAnalysis.choices[0]?.message?.content || '{}';
+      const content = fitAnalysis.choices?.[0]?.message?.content || '{}';
+      console.log('Content from fit analysis:', content);
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         analysisResult = JSON.parse(jsonMatch[0]);
@@ -145,7 +149,7 @@ serve(async (req) => {
       }
     } catch (parseError) {
       console.warn('Failed to parse JSON response, creating fallback result');
-      const content = fitAnalysis.choices[0]?.message?.content || '';
+      const content = fitAnalysis.choices?.[0]?.message?.content || '';
       analysisResult = {
         fitScore: 85,
         recommendation: content.substring(0, 200),
