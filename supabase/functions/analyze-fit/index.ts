@@ -162,6 +162,9 @@ serve(async (req) => {
     console.log('Fit analysis result:', analysisResult);
 
     // 3. GPT-4o: Generate virtual try-on image
+    console.log('Starting virtual try-on image generation...');
+    console.log('Clothing data for image generation:', clothingData);
+    
     const imageGenResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -177,13 +180,18 @@ serve(async (req) => {
       }),
     });
     
+    console.log('Image generation response status:', imageGenResponse.status);
+    
     let overlayImageUrl = null;
     if (imageGenResponse.ok) {
       const imageGenData = await imageGenResponse.json();
+      console.log('Image generation response data:', JSON.stringify(imageGenData, null, 2));
       overlayImageUrl = imageGenData?.data?.[0]?.url ?? null;
+      console.log('Generated overlay image URL:', overlayImageUrl);
     } else {
-      console.error('GPT-4o image generation failed:', imageGenResponse.status);
-      throw new Error(`GPT-4o image generation failed: ${imageGenResponse.status}`);
+      const errorText = await imageGenResponse.text();
+      console.error('GPT-4o image generation failed:', imageGenResponse.status, errorText);
+      throw new Error(`GPT-4o image generation failed: ${imageGenResponse.status} - ${errorText}`);
     }
 
     return new Response(JSON.stringify({
