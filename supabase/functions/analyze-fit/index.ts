@@ -118,7 +118,38 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: `CLOTHING ITEM:\nName: ${clothingData.name}\nAvailable Sizes: ${clothingData.sizes?.join(', ')}\nSize Chart: ${JSON.stringify(clothingData.sizeChart)}\nDescription: ${clothingData.description}\nMaterial: ${clothingData.material}\n\nUSER BODY ANALYSIS:\n${bodyAssessment}\n\nUSER MEASUREMENTS:\nHeight: ${userData.height}in\nWeight: ${userData.weight}lbs\nPreferred Size: ${userData.preferredSize}\n\nPlease provide:\n1. Fit Score (0-100) for the preferred size ${userData.preferredSize}\n2. Detailed fit recommendation\n3. Alternative size suggestions if needed\n4. Specific advice about how this item will fit (loose, tight, perfect, etc.)\n\nRespond in JSON format:\n{\n  \"fitScore\": number,\n  \"recommendation\": \"string\",\n  \"sizeAdvice\": \"string\",\n  \"alternativeSize\": \"string or null\",\n  \"fitDetails\": \"string\"\n}`
+                text: `CLOTHING ITEM:
+Name: ${clothingData.name}
+Available Sizes: ${clothingData.sizes?.join(', ')}
+Size Chart: ${JSON.stringify(clothingData.sizeChart)}
+Description: ${clothingData.description}
+Material: ${clothingData.material}
+
+USER BODY ANALYSIS:
+${bodyAssessment}
+
+USER MEASUREMENTS:
+Height: ${userData.height}in
+Weight: ${userData.weight}lbs
+Preferred Size: ${userData.preferredSize}
+
+IMPORTANT: You must respond with ONLY valid JSON. No additional text before or after the JSON.
+
+Analyze the fit and respond with this exact JSON structure:
+{
+  "fitScore": <number between 0-100>,
+  "recommendation": "<detailed fit recommendation>",
+  "sizeAdvice": "<specific size advice>",
+  "alternativeSize": "<alternative size or null>",
+  "fitDetails": "<detailed explanation of how the item will fit>"
+}
+
+Consider:
+- A 5'2" person at 100lbs wearing XXL would likely be a very poor fit (low score)
+- A 6'0" person at 200lbs wearing S would likely be a very poor fit (low score)
+- Be realistic about body proportions and sizing
+- Lower scores for obvious size mismatches
+- Higher scores for appropriate size selections`
               }
             ]
           }
@@ -140,22 +171,59 @@ serve(async (req) => {
     try {
       // Try to parse JSON response
       const content = fitAnalysis.choices?.[0]?.message?.content || '{}';
-      console.log('Content from fit analysis:', content);
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        analysisResult = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No JSON found in response');
+      console.log('Raw content from fit analysis:', content);
+      
+      // Clean the content - remove any markdown formatting
+      let cleanContent = content.trim();
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
+      
+      console.log('Cleaned content:', cleanContent);
+      
+      // Try to parse the cleaned content
+      analysisResult = JSON.parse(cleanContent);
+      console.log('Successfully parsed JSON:', analysisResult);
+      
+      // Validate the result has required fields
+      if (typeof analysisResult.fitScore !== 'number' || analysisResult.fitScore < 0 || analysisResult.fitScore > 100) {
+        throw new Error('Invalid fitScore in response');
+      }
+      
     } catch (parseError) {
-      console.warn('Failed to parse JSON response, creating fallback result');
+      console.error('Failed to parse JSON response:', parseError);
+      console.log('Content that failed to parse:', fitAnalysis.choices?.[0]?.message?.content);
+      
+      // Create a more intelligent fallback based on the actual content
       const content = fitAnalysis.choices?.[0]?.message?.content || '';
+      
+      // Try to extract a fit score from the text if possible
+      let estimatedScore = 75; // default
+      const scoreMatch = content.match(/(?:fit score|score|rating).*?(\d+)/i);
+      if (scoreMatch) {
+        estimatedScore = parseInt(scoreMatch[1]);
+      }
+      
+      // Adjust score based on obvious size mismatches
+      const height = parseInt(userData.height);
+      const weight = parseInt(userData.weight);
+      const preferredSize = userData.preferredSize?.toLowerCase();
+      
+      // Logic for obvious mismatches
+      if (height <= 62 && weight <= 120 && preferredSize?.includes('xl')) {
+        estimatedScore = Math.min(estimatedScore, 30); // Very poor fit
+      } else if (height >= 72 && weight >= 180 && preferredSize?.includes('s')) {
+        estimatedScore = Math.min(estimatedScore, 30); // Very poor fit
+      }
+      
       analysisResult = {
-        fitScore: 85,
-        recommendation: content.substring(0, 200),
-        sizeAdvice: `Based on your measurements (${userData.height}in, ${userData.weight}lbs), size ${userData.preferredSize} should work well.`,
+        fitScore: estimatedScore,
+        recommendation: content.substring(0, 200) || 'Unable to parse detailed recommendation',
+        sizeAdvice: `Based on your measurements (${userData.height}in, ${userData.weight}lbs), size ${userData.preferredSize} may not be optimal.`,
         alternativeSize: null,
-        fitDetails: content
+        fitDetails: content || 'Detailed analysis unavailable'
       };
     }
 
@@ -197,11 +265,11 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       analysis: {
-        fitScore: analysisResult.fitScore || 75,
-        recommendation: analysisResult.recommendation || 'Good fit expected',
-        sizeAdvice: analysisResult.sizeAdvice || `Size ${userData.preferredSize} recommended`,
+        fitScore: analysisResult.fitScore,
+        recommendation: analysisResult.recommendation,
+        sizeAdvice: analysisResult.sizeAdvice,
         alternativeSize: analysisResult.alternativeSize,
-        fitDetails: analysisResult.fitDetails || '',
+        fitDetails: analysisResult.fitDetails,
         bodyAnalysis: bodyAssessment,
         overlay: overlayImageUrl // Virtual try-on image URL
       }
