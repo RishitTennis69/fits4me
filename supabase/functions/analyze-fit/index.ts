@@ -118,7 +118,9 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: `CLOTHING ITEM:
+                text: `You are a clothing fit analyzer. Your task is to analyze how well a clothing item will fit a person based on their measurements and the item's size chart.
+
+CLOTHING ITEM:
 Name: ${clothingData.name}
 Available Sizes: ${clothingData.sizes?.join(', ')}
 Size Chart: ${JSON.stringify(clothingData.sizeChart)}
@@ -133,23 +135,21 @@ Height: ${userData.height}in
 Weight: ${userData.weight}lbs
 Preferred Size: ${userData.preferredSize}
 
-IMPORTANT: You must respond with ONLY valid JSON. No additional text before or after the JSON.
+CRITICAL: You must respond with ONLY a valid JSON object. No text before or after the JSON. No markdown formatting. Just pure JSON.
 
-Analyze the fit and respond with this exact JSON structure:
+Example of obvious mismatches:
+- 5'2" (62in) person at 100lbs wearing XXL = very poor fit (score 20-30)
+- 6'0" (72in) person at 200lbs wearing S = very poor fit (score 20-30)
+- 5'8" (68in) person at 150lbs wearing M = good fit (score 70-85)
+
+Respond with this exact JSON structure (no other text):
 {
-  "fitScore": <number between 0-100>,
-  "recommendation": "<detailed fit recommendation>",
-  "sizeAdvice": "<specific size advice>",
+  "fitScore": <number 0-100>,
+  "recommendation": "<detailed recommendation>",
+  "sizeAdvice": "<size advice>",
   "alternativeSize": "<alternative size or null>",
-  "fitDetails": "<detailed explanation of how the item will fit>"
-}
-
-Consider:
-- A 5'2" person at 100lbs wearing XXL would likely be a very poor fit (low score)
-- A 6'0" person at 200lbs wearing S would likely be a very poor fit (low score)
-- Be realistic about body proportions and sizing
-- Lower scores for obvious size mismatches
-- Higher scores for appropriate size selections`
+  "fitDetails": "<detailed fit explanation>"
+}`
               }
             ]
           }
@@ -172,16 +172,22 @@ Consider:
       // Try to parse JSON response
       const content = fitAnalysis.choices?.[0]?.message?.content || '{}';
       console.log('Raw content from fit analysis:', content);
+      console.log('Content length:', content.length);
+      console.log('Content starts with:', content.substring(0, 50));
+      console.log('Content ends with:', content.substring(content.length - 50));
       
       // Clean the content - remove any markdown formatting
       let cleanContent = content.trim();
       if (cleanContent.startsWith('```json')) {
         cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        console.log('Removed markdown json formatting');
       } else if (cleanContent.startsWith('```')) {
         cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        console.log('Removed markdown formatting');
       }
       
       console.log('Cleaned content:', cleanContent);
+      console.log('Cleaned content length:', cleanContent.length);
       
       // Try to parse the cleaned content
       analysisResult = JSON.parse(cleanContent);
@@ -204,6 +210,7 @@ Consider:
       const scoreMatch = content.match(/(?:fit score|score|rating).*?(\d+)/i);
       if (scoreMatch) {
         estimatedScore = parseInt(scoreMatch[1]);
+        console.log('Extracted score from text:', estimatedScore);
       }
       
       // Adjust score based on obvious size mismatches
@@ -211,16 +218,36 @@ Consider:
       const weight = parseInt(userData.weight);
       const preferredSize = userData.preferredSize?.toLowerCase();
       
+      console.log('Analyzing size mismatch - Height:', height, 'Weight:', weight, 'Size:', preferredSize);
+      
       // Logic for obvious mismatches
       if (height <= 62 && weight <= 120 && preferredSize?.includes('xl')) {
         estimatedScore = Math.min(estimatedScore, 30); // Very poor fit
+        console.log('Detected small person with XL size - setting score to:', estimatedScore);
       } else if (height >= 72 && weight >= 180 && preferredSize?.includes('s')) {
         estimatedScore = Math.min(estimatedScore, 30); // Very poor fit
+        console.log('Detected large person with S size - setting score to:', estimatedScore);
+      }
+      
+      // Try to extract recommendation from content
+      let recommendation = 'Unable to parse detailed recommendation';
+      if (content.length > 0) {
+        // Try to find a meaningful recommendation in the content
+        const lines = content.split('\n');
+        for (const line of lines) {
+          if (line.length > 20 && !line.includes('{') && !line.includes('}')) {
+            recommendation = line.trim();
+            break;
+          }
+        }
+        if (recommendation === 'Unable to parse detailed recommendation') {
+          recommendation = content.substring(0, 200);
+        }
       }
       
       analysisResult = {
         fitScore: estimatedScore,
-        recommendation: content.substring(0, 200) || 'Unable to parse detailed recommendation',
+        recommendation: recommendation,
         sizeAdvice: `Based on your measurements (${userData.height}in, ${userData.weight}lbs), size ${userData.preferredSize} may not be optimal.`,
         alternativeSize: null,
         fitDetails: content || 'Detailed analysis unavailable'
