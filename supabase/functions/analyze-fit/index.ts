@@ -35,7 +35,7 @@ serve(async (req) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-sonnet-20240229',
         max_tokens: 1000,
         messages: [
           {
@@ -59,7 +59,9 @@ serve(async (req) => {
     });
 
     if (!bodyAnalysisResponse.ok) {
-      throw new Error(`Claude API error: ${bodyAnalysisResponse.status}`);
+      const errorText = await bodyAnalysisResponse.text();
+      console.error('Claude API error details:', errorText);
+      throw new Error(`Claude API error: ${bodyAnalysisResponse.status} - ${errorText}`);
     }
 
     const bodyAnalysis = await bodyAnalysisResponse.json();
@@ -76,7 +78,7 @@ serve(async (req) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-3-sonnet-20240229',
         max_tokens: 1500,
         messages: [
           {
@@ -93,7 +95,9 @@ serve(async (req) => {
     });
 
     if (!fitAnalysisResponse.ok) {
-      throw new Error(`Claude fit analysis error: ${fitAnalysisResponse.status}`);
+      const errorText = await fitAnalysisResponse.text();
+      console.error('Claude fit analysis error details:', errorText);
+      throw new Error(`Claude fit analysis error: ${fitAnalysisResponse.status} - ${errorText}`);
     }
 
     const fitAnalysis = await fitAnalysisResponse.json();
