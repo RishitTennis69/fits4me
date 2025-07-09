@@ -118,38 +118,7 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: `You are a clothing fit analyzer. Your task is to analyze how well a clothing item will fit a person based on their measurements and the item's size chart.
-
-CLOTHING ITEM:
-Name: ${clothingData.name}
-Available Sizes: ${clothingData.sizes?.join(', ')}
-Size Chart: ${JSON.stringify(clothingData.sizeChart)}
-Description: ${clothingData.description}
-Material: ${clothingData.material}
-
-USER BODY ANALYSIS:
-${bodyAssessment}
-
-USER MEASUREMENTS:
-Height: ${userData.height}in
-Weight: ${userData.weight}lbs
-Preferred Size: ${userData.preferredSize}
-
-CRITICAL: You must respond with ONLY a valid JSON object. No text before or after the JSON. No markdown formatting. Just pure JSON.
-
-Example of obvious mismatches:
-- 5'2" (62in) person at 100lbs wearing XXL = very poor fit (score 20-30)
-- 6'0" (72in) person at 200lbs wearing S = very poor fit (score 20-30)
-- 5'8" (68in) person at 150lbs wearing M = good fit (score 70-85)
-
-Respond with this exact JSON structure (no other text):
-{
-  "fitScore": <number 0-100>,
-  "recommendation": "<detailed recommendation>",
-  "sizeAdvice": "<size advice>",
-  "alternativeSize": "<alternative size or null>",
-  "fitDetails": "<detailed fit explanation>"
-}`
+                text: `CLOTHING ITEM:\nName: ${clothingData.name}\nBrand: ${clothingData.brand || 'N/A'}\nAvailable Sizes: ${clothingData.sizes?.join(', ')}\nSize Chart: ${JSON.stringify(clothingData.sizeChart)}\nDescription: ${clothingData.description}\nMaterial: ${clothingData.material}\n\nUSER BODY ANALYSIS:\n${bodyAssessment}\n\nUSER MEASUREMENTS:\nHeight: ${userData.height}in\nWeight: ${userData.weight}lbs\nPreferred Size: ${userData.preferredSize}\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text.\n\nPlease provide:\n1. Fit Score (0-100) for the preferred size ${userData.preferredSize}\n2. Detailed fit recommendation\n3. Alternative size suggestions if needed (e.g., would XS or M be better?)\n4. Brand comparison: If you have size charts for other brands, compare how this size would fit in those brands (e.g., “Nike S is smaller than Adidas S”). If no data, say so.\n5. Specific advice about how this item will fit (loose, tight, perfect, etc.)\n\nRespond in JSON format:\n{\n  "fitScore": number,\n  "recommendation": "string",\n  "sizeAdvice": "string",\n  "alternativeSize": "string or null",\n  "fitDetails": "string",\n  "brandComparison": "string"\n}`
               }
             ]
           }
@@ -250,7 +219,8 @@ Respond with this exact JSON structure (no other text):
         recommendation: recommendation,
         sizeAdvice: `Based on your measurements (${userData.height}in, ${userData.weight}lbs), size ${userData.preferredSize} may not be optimal.`,
         alternativeSize: null,
-        fitDetails: content || 'Detailed analysis unavailable'
+        fitDetails: content || 'Detailed analysis unavailable',
+        brandComparison: 'No brand comparison available (fallback)'
       };
     }
 
