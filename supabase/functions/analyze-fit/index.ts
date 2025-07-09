@@ -147,7 +147,12 @@ serve(async (req) => {
     let analysisResult;
     let aiMessage = '';
 
-    const content = fitAnalysis.choices?.[0]?.message?.content;
+    let content = fitAnalysis.choices?.[0]?.message?.content;
+    // If content is an array (Claude sometimes returns [{type: 'text', text: ...}]), extract the text
+    if (Array.isArray(content) && content[0]?.text) {
+      content = content[0].text;
+    }
+
     if (typeof content === 'undefined') {
       console.error('Claude fit analysis response content is undefined. Full response:', JSON.stringify(fitAnalysis, null, 2));
       aiMessage = 'AI fit analysis is not available at this time.';
