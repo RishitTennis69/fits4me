@@ -255,7 +255,12 @@ serve(async (req) => {
           });
           if (clothingDescResponse.ok) {
             const clothingDescData = await clothingDescResponse.json();
-            const clothingDesc = clothingDescData.choices?.[0]?.message?.content?.trim();
+            let clothingDesc = clothingDescData.choices?.[0]?.message?.content;
+            // If content is an array, extract the text
+            if (Array.isArray(clothingDesc) && clothingDesc[0]?.text) {
+              clothingDesc = clothingDesc[0].text;
+            }
+            clothingDesc = clothingDesc?.trim();
             if (clothingDesc && clothingDesc.length > 20) {
               detailedClothingDescription = clothingDesc;
               // Try to extract the TEXT/LOGO/NUMBER line
@@ -267,14 +272,20 @@ serve(async (req) => {
               console.log('Detailed clothing description from Claude:', detailedClothingDescription);
             } else {
               console.warn('Claude clothing description was too short or missing, using fallback.');
+              detailedClothingDescription = clothingData.description;
+              extractedTextLogo = '';
             }
           } else {
             const errorText = await clothingDescResponse.text();
             console.error('Claude clothing description error:', errorText);
+            detailedClothingDescription = clothingData.description;
+            extractedTextLogo = '';
           }
         }
       } catch (descError) {
         console.error('Error getting detailed clothing description from Claude:', descError);
+        detailedClothingDescription = clothingData.description;
+        extractedTextLogo = '';
       }
     }
 
