@@ -158,36 +158,41 @@ serve(async (req) => {
       analysisResult = null;
     } else {
       try {
-        console.log('Raw content from fit analysis:', content);
-        // Try to extract JSON block with regex if not pure JSON
-        let cleanContent = content.trim();
-        // If Claude refuses due to minor, set user-facing message
-        if (/not able to analyze body measurements|not able to analyze.*proportions.*minors|child safety|privacy protection|cannot analyze/i.test(cleanContent)) {
-          aiMessage = 'AI body analysis is not available for minors. Please use manual measurements.';
-          analysisResult = null;
-        } else {
-          // Try to extract JSON block if not pure JSON
-          let jsonBlock = cleanContent;
-          if (!cleanContent.startsWith('{')) {
-            const match = cleanContent.match(/\{[\s\S]*\}/);
-            if (match) {
-              jsonBlock = match[0];
-              console.log('Extracted JSON block with regex.');
-            }
+        let jsonBlock = content.trim();
+        // If it's a string that looks like JSON, parse it
+        if (jsonBlock.startsWith('{') && jsonBlock.endsWith('}')) {
+          try {
+            analysisResult = JSON.parse(jsonBlock);
+            console.log('Parsed JSON directly from string.');
+          } catch (e) {
+            console.error('Direct JSON parse failed, will try regex extraction.', e);
           }
-          // Try to parse the JSON
-          analysisResult = JSON.parse(jsonBlock);
-          // If analysisResult is a string (double-encoded), parse again
-          if (typeof analysisResult === 'string') {
+        }
+        // If not parsed yet, try to extract JSON block with regex
+        if (!analysisResult) {
+          const match = jsonBlock.match(/\{[\s\S]*\}/);
+          if (match) {
             try {
-              analysisResult = JSON.parse(analysisResult);
-              console.log('Parsed double-encoded JSON from Claude.');
+              analysisResult = JSON.parse(match[0]);
+              console.log('Parsed JSON from regex-extracted block.');
             } catch (e) {
-              aiMessage = 'AI fit analysis returned invalid JSON.';
-              analysisResult = null;
+              console.error('Regex JSON parse failed.', e);
             }
           }
-          console.log('Successfully parsed JSON:', analysisResult);
+        }
+        // If analysisResult is a string (double-encoded), parse again
+        if (typeof analysisResult === 'string') {
+          try {
+            analysisResult = JSON.parse(analysisResult);
+            console.log('Parsed double-encoded JSON from Claude.');
+          } catch (e) {
+            aiMessage = 'AI fit analysis returned invalid JSON.';
+            analysisResult = null;
+          }
+        }
+        if (!analysisResult) {
+          aiMessage = 'AI fit analysis response was invalid.';
+        } else {
           // Defensive: Validate fitScore
           let fitScoreValid = false;
           if (typeof analysisResult?.fitScore === 'number' && analysisResult.fitScore >= 0 && analysisResult.fitScore <= 100) {
@@ -205,7 +210,7 @@ serve(async (req) => {
           }
         }
       } catch (parseError) {
-        console.error('Failed to parse JSON response:', parseError);
+        console.error('Failed to robustly parse JSON response:', parseError);
         aiMessage = 'AI fit analysis response was invalid.';
         analysisResult = null;
       }
@@ -216,6 +221,7 @@ serve(async (req) => {
     // 0. Claude 4 Sonnet: Describe the user's clothing image in detail
     let detailedClothingDescription = clothingData.description;
     let extractedTextLogo = '';
+    let extractedColor = '';
     if (clothingData.image) {
       try {
         const clothingImageContent = clothingData.image.startsWith('data:image')
@@ -245,7 +251,7 @@ serve(async (req) => {
                   content: [
                     {
                       type: 'text',
-                      text: `Describe this clothing item in extreme detail for an AI image generator. Include color, material, style, patterns, logos, text, numbers, and any unique features. If there is any visible text, logo, or number on the item, extract it and state it clearly as a separate line: TEXT/LOGO/NUMBER: ...`
+                      text: `Describe this clothing item in extreme detail for an AI image generator.\n- State the primary color clearly (e.g., 'The hoodie is blue.').\n- If there is any visible text, logo, or number on the item, extract it and state it clearly as a separate line: TEXT/LOGO/NUMBER: ...\nInclude color, material, style, patterns, logos, text, numbers, and any unique features.`
                     },
                     clothingImageContent
                   ]
@@ -254,7 +260,7 @@ serve(async (req) => {
             }),
           });
           if (clothingDescResponse.ok) {
-            const clothingDescData = await clothingDescResponse.json();
+            let clothingDescData = await clothingDescResponse.json();
             let clothingDesc = clothingDescData.choices?.[0]?.message?.content;
             // If content is an array, extract the text
             if (Array.isArray(clothingDesc) && clothingDesc[0]?.text) {
@@ -269,23 +275,32 @@ serve(async (req) => {
                 extractedTextLogo = textLogoMatch[1].trim();
                 console.log('Extracted text/logo/number from Claude:', extractedTextLogo);
               }
+              // Try to extract the color (look for lines like 'The hoodie is blue.' or 'Color: ...')
+              const colorMatch = clothingDesc.match(/(?:The [^\n]+ is|Color:)\s*([a-zA-Z ]+)/i);
+              if (colorMatch && colorMatch[1]) {
+                extractedColor = colorMatch[1].trim();
+                console.log('Extracted color from Claude:', extractedColor);
+              }
               console.log('Detailed clothing description from Claude:', detailedClothingDescription);
             } else {
               console.warn('Claude clothing description was too short or missing, using fallback.');
               detailedClothingDescription = clothingData.description;
               extractedTextLogo = '';
+              extractedColor = clothingData.color || '';
             }
           } else {
             const errorText = await clothingDescResponse.text();
             console.error('Claude clothing description error:', errorText);
             detailedClothingDescription = clothingData.description;
             extractedTextLogo = '';
+            extractedColor = clothingData.color || '';
           }
         }
       } catch (descError) {
         console.error('Error getting detailed clothing description from Claude:', descError);
         detailedClothingDescription = clothingData.description;
         extractedTextLogo = '';
+        extractedColor = clothingData.color || '';
       }
     }
 
@@ -294,7 +309,7 @@ serve(async (req) => {
     console.log('Clothing data for image generation:', clothingData);
     
     // Build a highly specific mannequin prompt
-    const colorDetail = clothingData.color ? `The most important detail is the color: ${clothingData.color}.` : '';
+    const colorDetail = extractedColor ? `The most important detail is the color: ${extractedColor}.` : (clothingData.color ? `The most important detail is the color: ${clothingData.color}.` : '');
     const textLogoDetail = extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : '';
     const mannequinPrompt = `A photorealistic image of a faceless mannequin with body proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height} inches, weight: ${userData.weight} lbs), wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${colorDetail} ${textLogoDetail} The fit should be realistic for the given size and body. The color of the clothing must be exactly as described. Emphasize the color accuracy above all else. Neutral background. No text, no logos, no visible brand names except as described. NOTE: This is an AI-generated image and cannot use a real clothing image as input.`;
     
