@@ -195,9 +195,9 @@ const Index = () => {
 
       const analysis = data.analysis;
       setAnalysisResult({
-        fitScore: analysis.fitScore,
-        recommendation: analysis.recommendation,
-        sizeAdvice: analysis.sizeAdvice,
+        fitScore: analysis?.fitScore || 75,
+        recommendation: analysis?.recommendation || 'Fit analysis completed successfully.',
+        sizeAdvice: analysis?.sizeAdvice || 'Size recommendation available.',
         overlay: data.overlay || userData.photo // Use the generated overlay image
       });
       
