@@ -260,6 +260,13 @@ Respond with this exact JSON structure (no other text):
     console.log('Starting virtual try-on image generation...');
     console.log('Clothing data for image generation:', clothingData);
     
+    // Build a more personalized prompt
+    const personDesc = `A person with body type and proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height}in, weight: ${userData.weight}lbs)`;
+    const clothingDesc = `wearing the following item: ${clothingData.name}, described as: ${clothingData.description}. Material: ${clothingData.material}. Color/style: ${clothingData.color || 'N/A'}.`;
+    const prompt = `${personDesc}, ${clothingDesc} The clothing should fit naturally and look realistic. Style: photorealistic, natural lighting, high quality.`;
+    
+    console.log('DALL-E prompt:', prompt);
+    
     const imageGenResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -268,7 +275,7 @@ Respond with this exact JSON structure (no other text):
       },
       body: JSON.stringify({
         model: "dall-e-3",
-        prompt: `A realistic photo showing a person wearing ${clothingData.name}. The person should match the body type and proportions described in the analysis. The clothing should fit naturally and look like a real person wearing this item. Style: photorealistic, natural lighting, high quality.`,
+        prompt: prompt,
         n: 1,
         size: "1024x1024",
         quality: "hd"
@@ -277,16 +284,24 @@ Respond with this exact JSON structure (no other text):
     
     console.log('Image generation response status:', imageGenResponse.status);
     
-    let overlayImageUrl = null;
+    let overlayImageUrl = '';
     if (imageGenResponse.ok) {
       const imageGenData = await imageGenResponse.json();
       console.log('Image generation response data:', JSON.stringify(imageGenData, null, 2));
-      overlayImageUrl = imageGenData?.data?.[0]?.url ?? null;
+      overlayImageUrl = imageGenData?.data?.[0]?.url ?? '';
       console.log('Generated overlay image URL:', overlayImageUrl);
+      if (!overlayImageUrl) {
+        console.error('No image URL returned from DALL-E!');
+      }
     } else {
       const errorText = await imageGenResponse.text();
       console.error('GPT-4o image generation failed:', imageGenResponse.status, errorText);
       throw new Error(`GPT-4o image generation failed: ${imageGenResponse.status} - ${errorText}`);
+    }
+
+    // Fallback if no image URL
+    if (!overlayImageUrl) {
+      overlayImageUrl = 'https://via.placeholder.com/1024x1024?text=Virtual+Try-On+Unavailable';
     }
 
     return new Response(JSON.stringify({
