@@ -211,6 +211,7 @@ serve(async (req) => {
 
     // 0. Claude 4 Sonnet: Describe the user's clothing image in detail
     let detailedClothingDescription = clothingData.description;
+    let extractedTextLogo = '';
     if (clothingData.image) {
       try {
         const clothingImageContent = clothingData.image.startsWith('data:image')
@@ -240,7 +241,7 @@ serve(async (req) => {
                   content: [
                     {
                       type: 'text',
-                      text: `Describe this clothing item in extreme detail for an AI image generator. Include color, material, style, patterns, logos, text, and any unique features. Be as specific and visual as possible.`
+                      text: `Describe this clothing item in extreme detail for an AI image generator. Include color, material, style, patterns, logos, text, numbers, and any unique features. If there is any visible text, logo, or number on the item, extract it and state it clearly as a separate line: TEXT/LOGO/NUMBER: ...`
                     },
                     clothingImageContent
                   ]
@@ -253,6 +254,12 @@ serve(async (req) => {
             const clothingDesc = clothingDescData.choices?.[0]?.message?.content?.trim();
             if (clothingDesc && clothingDesc.length > 20) {
               detailedClothingDescription = clothingDesc;
+              // Try to extract the TEXT/LOGO/NUMBER line
+              const textLogoMatch = clothingDesc.match(/TEXT\/LOGO\/NUMBER:\s*(.*)/i);
+              if (textLogoMatch && textLogoMatch[1]) {
+                extractedTextLogo = textLogoMatch[1].trim();
+                console.log('Extracted text/logo/number from Claude:', extractedTextLogo);
+              }
               console.log('Detailed clothing description from Claude:', detailedClothingDescription);
             } else {
               console.warn('Claude clothing description was too short or missing, using fallback.');
@@ -273,7 +280,8 @@ serve(async (req) => {
     
     // Build a highly specific mannequin prompt
     const colorDetail = clothingData.color ? `The most important detail is the color: ${clothingData.color}.` : '';
-    const mannequinPrompt = `A photorealistic image of a faceless mannequin with body proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height} inches, weight: ${userData.weight} lbs), wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${colorDetail} The fit should be realistic for the given size and body. The color of the clothing must be exactly as described. Emphasize the color accuracy above all else. Neutral background. No text, no logos, no visible brand names. NOTE: This is an AI-generated image and cannot use a real clothing image as input.`;
+    const textLogoDetail = extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : '';
+    const mannequinPrompt = `A photorealistic image of a faceless mannequin with body proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height} inches, weight: ${userData.weight} lbs), wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${colorDetail} ${textLogoDetail} The fit should be realistic for the given size and body. The color of the clothing must be exactly as described. Emphasize the color accuracy above all else. Neutral background. No text, no logos, no visible brand names except as described. NOTE: This is an AI-generated image and cannot use a real clothing image as input.`;
     
     console.log('DALL-E mannequin prompt:', mannequinPrompt);
     
@@ -313,6 +321,9 @@ serve(async (req) => {
     if (!overlayImageUrl) {
       overlayImageUrl = 'https://via.placeholder.com/1024x1024?text=Virtual+Try-On+Unavailable';
     }
+
+    // Log the image URL sent to the frontend
+    console.log('Image URL sent to frontend:', overlayImageUrl);
 
     const responsePayload = {
       success: true,
