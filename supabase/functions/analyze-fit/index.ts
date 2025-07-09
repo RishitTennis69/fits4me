@@ -101,11 +101,11 @@ serve(async (req) => {
     console.log('Full Claude body analysis response:', JSON.stringify(bodyAnalysis, null, 2));
     bodyAssessment = bodyAnalysis.choices?.[0]?.message?.content || '';
 
-    // Fallback: If Claude refuses to analyze the body (e.g., for minors), use only manual measurements
-    if (bodyAssessment.match(/not able to analyze body measurements|not able to analyze.*proportions.*minors|child safety|privacy protection|cannot analyze/i)) {
+    // Fallback: If Claude refuses or fails to analyze the body, use only manual measurements
+    if (!bodyAssessment || /not able to analyze|cannot analyze|refuse|privacy protection|error|unavailable/i.test(bodyAssessment)) {
       usedManualMeasurements = true;
       bodyAssessment = `Manual fallback: User-provided measurements only. Height: ${userData.height}in, Weight: ${userData.weight}lbs, Preferred Size: ${userData.preferredSize}.`;
-      console.warn('Claude refused body analysis. Using manual measurements only.');
+      console.warn('Claude refused or failed body analysis. Using manual measurements only.');
     }
 
     console.log('Body analysis:', bodyAssessment);
@@ -152,8 +152,7 @@ serve(async (req) => {
     if (Array.isArray(content) && content[0]?.text) {
       content = content[0].text;
     }
-
-    if (typeof content === 'undefined') {
+    if (!content) {
       console.error('Claude fit analysis response content is undefined. Full response:', JSON.stringify(fitAnalysis, null, 2));
       aiMessage = 'AI fit analysis is not available at this time.';
       analysisResult = null;
