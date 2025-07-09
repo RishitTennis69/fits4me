@@ -262,7 +262,8 @@ serve(async (req) => {
     console.log('Clothing data for image generation:', clothingData);
     
     // Build a highly specific mannequin prompt
-    const mannequinPrompt = `A photorealistic image of a faceless mannequin with body proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height} inches, weight: ${userData.weight} lbs), wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. The fit should be realistic for the given size and body. Neutral background. No text, no logos, no visible brand names. NOTE: This is an AI-generated image and cannot use a real clothing image as input.`;
+    const colorDetail = clothingData.color ? `The most important detail is the color: ${clothingData.color}.` : '';
+    const mannequinPrompt = `A photorealistic image of a faceless mannequin with body proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height} inches, weight: ${userData.weight} lbs), wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${colorDetail} The fit should be realistic for the given size and body. The color of the clothing must be exactly as described. Emphasize the color accuracy above all else. Neutral background. No text, no logos, no visible brand names. NOTE: This is an AI-generated image and cannot use a real clothing image as input.`;
     
     console.log('DALL-E mannequin prompt:', mannequinPrompt);
     
