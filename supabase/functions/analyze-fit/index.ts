@@ -96,7 +96,7 @@ serve(async (req) => {
     }
 
     const bodyAnalysis = await bodyAnalysisResponse.json();
-    console.log('Body analysis response structure:', JSON.stringify(bodyAnalysis, null, 2));
+    console.log('Full Claude body analysis response:', JSON.stringify(bodyAnalysis, null, 2));
     const bodyAssessment = bodyAnalysis.choices?.[0]?.message?.content || '';
 
     console.log('Body analysis:', bodyAssessment);
@@ -133,13 +133,16 @@ serve(async (req) => {
     }
 
     const fitAnalysis = await fitAnalysisResponse.json();
-    console.log('Fit analysis response structure:', JSON.stringify(fitAnalysis, null, 2));
+    console.log('Full Claude fit analysis response:', JSON.stringify(fitAnalysis, null, 2));
     
     let analysisResult;
 
     try {
       // Try to parse JSON response
-      const content = fitAnalysis.choices?.[0]?.message?.content || '{}';
+      const content = fitAnalysis.choices?.[0]?.message?.content;
+      if (typeof content === 'undefined') {
+        throw new Error('Claude fit analysis response content is undefined');
+      }
       console.log('Raw content from fit analysis:', content);
       console.log('Content length:', content.length);
       console.log('Content starts with:', content.substring(0, 50));
@@ -169,7 +172,7 @@ serve(async (req) => {
       
     } catch (parseError) {
       console.error('Failed to parse JSON response:', parseError);
-      console.log('Content that failed to parse:', fitAnalysis.choices?.[0]?.message?.content);
+      console.log('Full fitAnalysis object:', JSON.stringify(fitAnalysis, null, 2));
       
       // Create a more intelligent fallback based on the actual content
       const content = fitAnalysis.choices?.[0]?.message?.content || '';
@@ -231,7 +234,7 @@ serve(async (req) => {
     console.log('Clothing data for image generation:', clothingData);
     
     // Build a highly specific mannequin prompt
-    const mannequinPrompt = `A photorealistic image of a faceless mannequin with body proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height} inches, weight: ${userData.weight} lbs), wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${clothingData.description}. Color: ${clothingData.color || 'N/A'}. Material: ${clothingData.material}. The fit should be realistic for the given size and body. Neutral background. No text, no logos, no visible brand names.`;
+    const mannequinPrompt = `A photorealistic image of a faceless mannequin with body proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height} inches, weight: ${userData.weight} lbs), wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${clothingData.description}. Color: ${clothingData.color || 'N/A'}. Material: ${clothingData.material}. The fit should be realistic for the given size and body. Neutral background. No text, no logos, no visible brand names. NOTE: This is an AI-generated image and cannot use a real clothing image as input.`;
     
     console.log('DALL-E mannequin prompt:', mannequinPrompt);
     
@@ -272,7 +275,7 @@ serve(async (req) => {
       overlayImageUrl = 'https://via.placeholder.com/1024x1024?text=Virtual+Try-On+Unavailable';
     }
 
-    return new Response(JSON.stringify({
+    const responsePayload = {
       success: true,
       analysis: {
         fitScore: analysisResult.fitScore,
@@ -280,10 +283,14 @@ serve(async (req) => {
         sizeAdvice: analysisResult.sizeAdvice,
         alternativeSize: analysisResult.alternativeSize,
         fitDetails: analysisResult.fitDetails,
+        brandComparison: analysisResult.brandComparison,
         bodyAnalysis: bodyAssessment,
         overlay: overlayImageUrl // Virtual try-on image URL
       }
-    }), {
+    };
+    console.log('Response payload to frontend:', JSON.stringify(responsePayload, null, 2));
+
+    return new Response(JSON.stringify(responsePayload), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
