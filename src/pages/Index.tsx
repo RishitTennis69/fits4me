@@ -23,9 +23,11 @@ interface ClothingData {
 
 interface UserData {
   photo: string;
-  height: number;
+  height: number; // This will store total inches
   weight: number;
   preferredSize: string;
+  feet: number; // New: separate feet input
+  inches: number; // New: separate inches input
 }
 
 const Index = () => {
@@ -37,7 +39,9 @@ const Index = () => {
     photo: '',
     height: Math.round(170 / 2.54), // convert 170cm to inches
     weight: Math.round(70 * 2.20462), // convert 70kg to lbs
-    preferredSize: 'M'
+    preferredSize: 'M',
+    feet: 5, // Default 5 feet
+    inches: 7 // Default 7 inches (5'7")
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<{
@@ -71,7 +75,7 @@ const Index = () => {
       analyzeProgressRef.current = Math.min(analyzeProgressRef.current + Math.random() * 0.5 + 0.2, 92);
       setAnalyzeProgress(analyzeProgressRef.current);
     }, 120);
-
+    
     try {
       // Call Supabase edge function to scrape clothing data
       const { data, error } = await supabase.functions.invoke('scrape-clothing', {
@@ -126,7 +130,7 @@ const Index = () => {
       });
     } finally {
       setTimeout(() => {
-        setIsAnalyzing(false);
+      setIsAnalyzing(false);
         setAnalyzeProgress(0);
         analyzeProgressRef.current = 0;
         if (analyzeIntervalRef.current) {
@@ -143,7 +147,10 @@ const Index = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setUserData(prev => ({ ...prev, photo: e.target?.result as string }));
-        setCurrentStep(3);
+        // Stay on step 2 for 2 seconds before moving to step 3
+        setTimeout(() => {
+          setCurrentStep(3);
+        }, 2000);
       };
       reader.readAsDataURL(file);
     }
@@ -160,6 +167,13 @@ const Index = () => {
     }
 
     setIsAnalyzing(true);
+    setAnalyzeProgress(5); // Start progress
+    analyzeProgressRef.current = 5;
+    if (analyzeIntervalRef.current) clearInterval(analyzeIntervalRef.current);
+    analyzeIntervalRef.current = setInterval(() => {
+      analyzeProgressRef.current = Math.min(analyzeProgressRef.current + Math.random() * 0.5 + 0.2, 92);
+      setAnalyzeProgress(analyzeProgressRef.current);
+    }, 250); // 25 seconds total (250ms * 100 steps = 25 seconds)
     
     try {
       // Call Supabase edge function for AI fit analysis
@@ -184,8 +198,15 @@ const Index = () => {
         fitScore: analysis.fitScore,
         recommendation: analysis.recommendation,
         sizeAdvice: analysis.sizeAdvice,
-        overlay: userData.photo // For now, show original photo - future enhancement could generate actual overlay
+        overlay: data.overlay || userData.photo // Use the generated overlay image
       });
+      
+      setAnalyzeProgress(100); // Complete
+      analyzeProgressRef.current = 100;
+      if (analyzeIntervalRef.current) {
+        clearInterval(analyzeIntervalRef.current);
+        analyzeIntervalRef.current = null;
+      }
       
       setCurrentStep(4);
       
@@ -194,6 +215,12 @@ const Index = () => {
         description: "Your AI-powered fit analysis is ready!"
       });
     } catch (error) {
+      setAnalyzeProgress(0);
+      analyzeProgressRef.current = 0;
+      if (analyzeIntervalRef.current) {
+        clearInterval(analyzeIntervalRef.current);
+        analyzeIntervalRef.current = null;
+      }
       console.error('Error analyzing fit:', error);
       toast({
         title: "Analysis Failed",
@@ -201,8 +228,27 @@ const Index = () => {
         variant: "destructive"
       });
     } finally {
-      setIsAnalyzing(false);
+      setTimeout(() => {
+        setIsAnalyzing(false);
+        setAnalyzeProgress(0);
+        analyzeProgressRef.current = 0;
+        if (analyzeIntervalRef.current) {
+          clearInterval(analyzeIntervalRef.current);
+          analyzeIntervalRef.current = null;
+        }
+      }, 500);
     }
+  };
+
+  // Helper function to update height when feet or inches change
+  const updateHeight = (feet: number, inches: number) => {
+    const totalInches = feet * 12 + inches;
+    setUserData(prev => ({ 
+      ...prev, 
+      feet, 
+      inches, 
+      height: totalInches 
+    }));
   };
 
   return (
@@ -224,7 +270,7 @@ const Index = () => {
               <div key={step} className="flex items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shadow-lg transition-colors duration-300 border-2 cursor-pointer ${
-                    currentStep >= step 
+                  currentStep >= step 
                       ? 'bg-gradient-to-br from-blue-500 to-purple-500 text-white border-blue-400 scale-110' 
                       : 'bg-white/60 text-gray-400 border-gray-200 cursor-default'
                   }`}
@@ -250,42 +296,42 @@ const Index = () => {
         <div className="flex flex-col items-center justify-center min-h-[400px] mt-[-20px] w-full max-w-2xl">
           {currentStep === 1 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
-              {/* Step 1: Clothing URL */}
+            {/* Step 1: Clothing URL */}
               <Card className="glassmorphism-card p-10 text-lg">
-                <CardHeader>
+              <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-blue-700">
                     <Link className="h-6 w-6 text-blue-500" />
-                    Step 1: Enter Clothing URL
-                  </CardTitle>
-                </CardHeader>
+                  Step 1: Enter Clothing URL
+                </CardTitle>
+              </CardHeader>
                 <CardContent className="space-y-6">
-                  <div>
+                <div>
                     <Label htmlFor="clothing-url" className="text-base">Clothing Item URL</Label>
-                    <Input
-                      id="clothing-url"
-                      placeholder="https://www.amazon.com/..."
-                      value={clothingUrl}
-                      onChange={(e) => setClothingUrl(e.target.value)}
+                  <Input
+                    id="clothing-url"
+                    placeholder="https://www.amazon.com/..."
+                    value={clothingUrl}
+                    onChange={(e) => setClothingUrl(e.target.value)}
                       className="mt-2 glassmorphism-input"
-                    />
-                  </div>
-                  <Button 
-                    onClick={handleUrlSubmit}
-                    disabled={isAnalyzing}
+                  />
+                </div>
+                <Button 
+                  onClick={handleUrlSubmit}
+                  disabled={isAnalyzing}
                     className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300"
-                  >
-                    {isAnalyzing ? (
-                      <>
+                >
+                  {isAnalyzing ? (
+                    <>
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
                         <Zap className="h-5 w-5 mr-2" />
-                        Analyze Clothing
-                      </>
-                    )}
-                  </Button>
+                      Analyze Clothing
+                    </>
+                  )}
+                </Button>
                   {/* Show clothing preview after scraping, before moving to step 2 */}
                   {clothingData && !isAnalyzing && (
                     <div className="mt-8 animate-fade-in-up">
@@ -315,28 +361,28 @@ const Index = () => {
                       </Card>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+              </CardContent>
+            </Card>
             </div>
           )}
           {currentStep === 2 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
-              {/* Step 2: Photo Upload */}
+            {/* Step 2: Photo Upload */}
               <Card className="glassmorphism-card p-10 text-lg">
-                <CardHeader>
+              <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-green-700">
                     <Upload className="h-6 w-6 text-green-500" />
-                    Step 2: Upload Your Photo
-                  </CardTitle>
-                </CardHeader>
+                  Step 2: Upload Your Photo
+                </CardTitle>
+              </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-white/40 backdrop-blur-md shadow-inner flex flex-col items-center gap-4">
-                    <input
+                  <input
                       ref={uploadInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    className="hidden"
                       disabled={currentStep < 2}
                     />
                     <input
@@ -346,8 +392,8 @@ const Index = () => {
                       capture="environment"
                       onChange={handlePhotoUpload}
                       className="hidden"
-                      disabled={currentStep < 2}
-                    />
+                    disabled={currentStep < 2}
+                  />
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                       <Button
                         type="button"
@@ -380,37 +426,59 @@ const Index = () => {
                         <p className="text-xs text-gray-400">PNG, JPG up to 10MB</p>
                       </div>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
             </div>
           )}
           {currentStep === 3 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
-              {/* Step 3: Measurements */}
+            {/* Step 3: Measurements */}
               <Card className="glassmorphism-card p-10 text-lg">
-                <CardHeader>
+              <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-purple-700">
                     <User className="h-6 w-6 text-purple-500" />
-                    Step 3: Your Measurements
-                  </CardTitle>
-                </CardHeader>
+                  Step 3: Your Measurements
+                </CardTitle>
+              </CardHeader>
                 <CardContent className="space-y-8">
-                  <div>
-                    <Label className="text-base" htmlFor="height-input">Height (inches):</Label>
+                <div>
+                  <Label className="text-base">Height:</Label>
+                  <div className="flex items-center gap-2 mt-2">
                     <Input
-                      id="height-input"
+                      id="feet-input"
                       type="number"
-                      value={userData.height}
+                      min="0"
+                      max="8"
+                      value={userData.feet}
                       onChange={e => {
-                        const val = Math.max(0, Number(e.target.value));
-                        setUserData(prev => ({ ...prev, height: val }));
+                        const feet = Math.max(0, Math.min(8, Number(e.target.value)));
+                        updateHeight(feet, userData.inches);
                       }}
-                      className="mt-2 glassmorphism-input text-xl py-2 px-4 w-40"
+                      className="glassmorphism-input text-xl py-2 px-4 w-20 text-center"
                       disabled={currentStep < 3}
                     />
+                    <span className="text-xl font-bold text-purple-700">ft</span>
+                    <Input
+                      id="inches-input"
+                      type="number"
+                      min="0"
+                      max="11"
+                      value={userData.inches}
+                      onChange={e => {
+                        const inches = Math.max(0, Math.min(11, Number(e.target.value)));
+                        updateHeight(userData.feet, inches);
+                      }}
+                      className="glassmorphism-input text-xl py-2 px-4 w-20 text-center"
+                      disabled={currentStep < 3}
+                    />
+                    <span className="text-xl font-bold text-purple-700">in</span>
+                    <span className="text-lg text-gray-600 ml-2">
+                      ({userData.height} inches total)
+                    </span>
                   </div>
-                  <div>
+                </div>
+                <div>
                     <Label className="text-base" htmlFor="weight-input">Weight (lbs):</Label>
                     <Input
                       id="weight-input"
@@ -421,51 +489,51 @@ const Index = () => {
                         setUserData(prev => ({ ...prev, weight: val }));
                       }}
                       className="mt-2 glassmorphism-input text-xl py-2 px-4 w-40"
-                      disabled={currentStep < 3}
-                    />
-                  </div>
-                  <div>
+                    disabled={currentStep < 3}
+                  />
+                </div>
+                <div>
                     <Label className="text-base">Preferred Size</Label>
                     <div className="flex gap-3 mt-3">
-                      {clothingData?.sizes.map(size => (
-                        <Button
-                          key={size}
-                          variant={userData.preferredSize === size ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setUserData(prev => ({ ...prev, preferredSize: size }))}
-                          disabled={currentStep < 3}
+                    {clothingData?.sizes.map(size => (
+                      <Button
+                        key={size}
+                        variant={userData.preferredSize === size ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setUserData(prev => ({ ...prev, preferredSize: size }))}
+                        disabled={currentStep < 3}
                           className={`rounded-full px-4 py-2 font-semibold transition-all duration-200 ${userData.preferredSize === size ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg scale-105' : 'bg-white/60 text-blue-700 border-blue-200 hover:bg-blue-50'}`}
-                        >
-                          {size}
-                        </Button>
-                      ))}
-                    </div>
+                      >
+                        {size}
+                      </Button>
+                    ))}
                   </div>
-                  {currentStep >= 3 && (
-                    <Button 
-                      onClick={handleAnalyze}
-                      disabled={isAnalyzing}
+                </div>
+                {currentStep >= 3 && (
+                  <Button 
+                    onClick={handleAnalyze}
+                    disabled={isAnalyzing}
                       className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300"
-                    >
-                      {isAnalyzing ? (
-                        <>
+                  >
+                    {isAnalyzing ? (
+                      <>
                           <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
-                          Analyzing Fit...
-                        </>
-                      ) : (
-                        <>
+                        Analyzing Fit...
+                      </>
+                    ) : (
+                      <>
                           <Shirt className="h-5 w-5 mr-2" />
-                          Analyze Fit
-                        </>
-                      )}
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                        Analyze Fit
+                      </>
+                    )}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </div>
           )}
-          {/* Analysis Progress */}
-          {isAnalyzing && (
+            {/* Analysis Progress */}
+            {isAnalyzing && (
             <div className="w-full max-w-2xl animate-fade-in-up mt-8">
               <Card className="glassmorphism-card p-10 text-lg">
                 <CardHeader>
@@ -474,13 +542,16 @@ const Index = () => {
                 <CardContent>
                   <div className="space-y-6">
                     <Progress value={analyzeProgress} className="w-full h-6 shadow-lg" />
+                    <p className="text-center text-gray-600">
+                      AI is analyzing your body proportions and clothing fit...
+                    </p>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          )}
-          {/* Results */}
-          {analysisResult && (
+            )}
+            {/* Results */}
+            {analysisResult && (
             <div className="w-full max-w-2xl animate-fade-in-up mt-8">
               <Card className="glassmorphism-card p-10 text-lg">
                 <CardHeader>
@@ -538,7 +609,7 @@ const Index = () => {
                 </CardContent>
               </Card>
             </div>
-          )}
+            )}
         </div>
       </div>
       {/* Glassmorphism and animation styles: Move the following CSS to your global CSS file (e.g., index.css or globals.css)
