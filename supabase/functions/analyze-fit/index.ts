@@ -45,6 +45,7 @@ serve(async (req) => {
 
     // 1. OpenAI GPT-4 Vision: Analyze the user's body from the photo
     let bodyAssessment = '';
+    let detailedMeasurements: any = null;
     let usedManualMeasurements = false;
     const bodyAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -54,14 +55,38 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-4-vision-preview',
-        max_tokens: 1000,
+        max_tokens: 1500,
         messages: [
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `This image is of an adult (over 18) and is provided with full consent by the user for the purpose of virtual clothing fitting. Please analyze the body proportions (shoulder width, chest/bust circumference, waist size, body type, etc.) and estimate measurements for clothing fit. Provided measurements: height: ${userData.height}in, weight: ${userData.weight}lbs, preferred size: ${userData.preferredSize}.`
+                text: `This image is of an adult (over 18) and is provided with full consent by the user for the purpose of virtual clothing fitting. 
+
+Please analyze the body proportions and estimate precise measurements for clothing fit. The user provided: height: ${userData.height}in, weight: ${userData.weight}lbs.
+
+IMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.
+
+Analyze the body and provide:
+1. Body type assessment
+2. Precise measurements in inches
+3. Fit recommendations
+
+Respond in this exact JSON format:
+{
+  "bodyType": "slim|average|full",
+  "bodyShape": "rectangular|triangle|inverted-triangle|hourglass",
+  "measurements": {
+    "chest": number,
+    "waist": number,
+    "hips": number,
+    "shoulders": number,
+    "armLength": number,
+    "inseam": number
+  },
+  "fitNotes": "string describing body proportions and fit considerations"
+}`
               },
               imageContent
             ]
@@ -78,7 +103,44 @@ serve(async (req) => {
 
     const bodyAnalysis = await bodyAnalysisResponse.json();
     console.log('Full OpenAI body analysis response:', JSON.stringify(bodyAnalysis, null, 2));
-    bodyAssessment = bodyAnalysis.choices?.[0]?.message?.content || '';
+    
+    let bodyContent = bodyAnalysis.choices?.[0]?.message?.content;
+    if (bodyContent) {
+      try {
+        // Try to parse the JSON response
+        let jsonBlock = bodyContent.trim();
+        if (jsonBlock.startsWith('{') && jsonBlock.endsWith('}')) {
+          try {
+            detailedMeasurements = JSON.parse(jsonBlock);
+            console.log('Successfully parsed detailed measurements:', detailedMeasurements);
+          } catch (e) {
+            console.error('Direct JSON parse failed, will try regex extraction.', e);
+          }
+        }
+        
+        // If not parsed yet, try to extract JSON block with regex
+        if (!detailedMeasurements) {
+          const match = jsonBlock.match(/\{[\s\S]*\}/);
+          if (match) {
+            try {
+              detailedMeasurements = JSON.parse(match[0]);
+              console.log('Parsed detailed measurements from regex-extracted block.');
+            } catch (e) {
+              console.error('Regex JSON parse failed.', e);
+            }
+          }
+        }
+        
+        if (detailedMeasurements && detailedMeasurements.measurements) {
+          bodyAssessment = `Detailed body analysis: ${detailedMeasurements.bodyType} body type, ${detailedMeasurements.bodyShape} shape. Measurements: Chest ${detailedMeasurements.measurements.chest}", Waist ${detailedMeasurements.measurements.waist}", Shoulders ${detailedMeasurements.measurements.shoulders}". ${detailedMeasurements.fitNotes}`;
+        } else {
+          bodyAssessment = bodyContent;
+        }
+      } catch (parseError) {
+        console.error('Failed to parse body analysis JSON:', parseError);
+        bodyAssessment = bodyContent;
+      }
+    }
 
     // Fallback: If OpenAI refuses or fails to analyze the body, use only manual measurements
     if (!bodyAssessment || /not able to analyze|cannot analyze|refuse|privacy protection|error|unavailable/i.test(bodyAssessment)) {
@@ -109,7 +171,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'user',
-            content: `CLOTHING ITEM:\nName: ${clothingData.name}\nBrand: ${clothingData.brand || 'N/A'}\nAvailable Sizes: ${clothingData.sizes?.join(', ')}\nSize Chart: ${JSON.stringify(clothingData.sizeChart)}\nDescription: ${clothingData.description}\nMaterial: ${clothingData.material}\n\nUSER BODY ANALYSIS:\n${bodyAssessment}\n\nUSER MEASUREMENTS:\nHeight: ${userData.height}in\nWeight: ${userData.weight}lbs\nPreferred Size: ${userData.preferredSize}\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks. If you cannot provide a fit analysis, respond with a clear message explaining why.\n\nPlease provide:\n1. Fit Score (0-100) for the preferred size ${userData.preferredSize} (fitScore must be a number between 0 and 100, never a string, null, or N/A)\n2. Detailed fit recommendation\n3. Alternative size suggestions if needed (e.g., would XS or M be better?)\n4. Brand comparison: If you have size charts for other brands, compare how this size would fit in those brands (e.g., "Nike S is smaller than Adidas S"). If no data, say so.\n5. Specific advice about how this item will fit (loose, tight, perfect, etc.)\n\nRespond in JSON format ONLY:\n{\n  "fitScore": number,\n  "recommendation": "string",\n  "sizeAdvice": "string",\n  "alternativeSize": "string or null",\n  "fitDetails": "string",\n  "brandComparison": "string"\n}`
+            content: `CLOTHING ITEM:\nName: ${clothingData.name}\nBrand: ${clothingData.brand || 'N/A'}\nAvailable Sizes: ${clothingData.sizes?.join(', ')}\nSize Chart: ${JSON.stringify(clothingData.sizeChart)}\nDescription: ${clothingData.description}\nMaterial: ${clothingData.material}\n\nUSER BODY ANALYSIS:\n${bodyAssessment}\n\nUSER MEASUREMENTS:\nHeight: ${userData.height}in\nWeight: ${userData.weight}lbs\nPreferred Size: ${userData.preferredSize}${detailedMeasurements ? `\nDetailed Measurements: ${JSON.stringify(detailedMeasurements.measurements)}` : ''}\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks. If you cannot provide a fit analysis, respond with a clear message explaining why.\n\nPlease provide:\n1. Fit Score (0-100) for the preferred size ${userData.preferredSize} (fitScore must be a number between 0 and 100, never a string, null, or N/A)\n2. Detailed fit recommendation\n3. Alternative size suggestions if needed (e.g., would XS or M be better?)\n4. Brand comparison: If you have size charts for other brands, compare how this size would fit in those brands (e.g., "Nike S is smaller than Adidas S"). If no data, say so.\n5. Specific advice about how this item will fit (loose, tight, perfect, etc.)\n6. Measurement comparison: Compare user's actual measurements with the product's size chart measurements\n\nRespond in JSON format ONLY:\n{\n  "fitScore": number,\n  "recommendation": "string",\n  "sizeAdvice": "string",\n  "alternativeSize": "string or null",\n  "fitDetails": "string",\n  "brandComparison": "string",\n  "measurementComparison": "string"\n}`
           }
         ]
       }),
@@ -232,7 +294,8 @@ serve(async (req) => {
       sizeAdvice: analysisResult.sizeAdvice || `Size ${userData.preferredSize} is recommended.`,
       alternativeSize: analysisResult.alternativeSize || null,
       fitDetails: analysisResult.fitDetails || `This item should fit well in size ${userData.preferredSize}.`,
-      brandComparison: analysisResult.brandComparison || "Size comparison data not available."
+      brandComparison: analysisResult.brandComparison || "Size comparison data not available.",
+      measurementComparison: analysisResult.measurementComparison || "Measurement comparison not available."
     };
 
     console.log('Final validated analysis:', validatedAnalysis);
@@ -1417,7 +1480,8 @@ serve(async (req) => {
         sizeAdvice: validatedAnalysis.sizeAdvice || `Size ${userData.preferredSize} is recommended.`,
         alternativeSize: validatedAnalysis.alternativeSize || null,
         fitDetails: validatedAnalysis.fitDetails || `This item should fit well in size ${userData.preferredSize}.`,
-        brandComparison: validatedAnalysis.brandComparison || "Size comparison data not available."
+        brandComparison: validatedAnalysis.brandComparison || "Size comparison data not available.",
+        measurementComparison: validatedAnalysis.measurementComparison || "Measurement comparison not available."
       },
       aiMessage: aiMessage || '',
       bodyAnalysis: bodyAssessment || `Height: ${userData.height}in, Weight: ${userData.weight}lbs, Size: ${userData.preferredSize}`,

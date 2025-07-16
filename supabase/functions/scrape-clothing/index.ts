@@ -46,7 +46,53 @@ serve(async (req) => {
                 },
                 description: { type: 'string', description: 'Product description' },
                 material: { type: 'string', description: 'Material/fabric information' },
-                brand: { type: 'string', description: 'Brand name' }
+                brand: { type: 'string', description: 'Brand name' },
+                sizeChart: {
+                  type: 'object',
+                  description: 'Detailed size chart with measurements for each size',
+                  properties: {
+                    S: {
+                      type: 'object',
+                      properties: {
+                        chest: { type: 'string', description: 'Chest measurement in inches' },
+                        waist: { type: 'string', description: 'Waist measurement in inches' },
+                        length: { type: 'string', description: 'Length measurement in inches' },
+                        shoulders: { type: 'string', description: 'Shoulder width in inches' },
+                        sleeves: { type: 'string', description: 'Sleeve length in inches' }
+                      }
+                    },
+                    M: {
+                      type: 'object',
+                      properties: {
+                        chest: { type: 'string', description: 'Chest measurement in inches' },
+                        waist: { type: 'string', description: 'Waist measurement in inches' },
+                        length: { type: 'string', description: 'Length measurement in inches' },
+                        shoulders: { type: 'string', description: 'Shoulder width in inches' },
+                        sleeves: { type: 'string', description: 'Sleeve length in inches' }
+                      }
+                    },
+                    L: {
+                      type: 'object',
+                      properties: {
+                        chest: { type: 'string', description: 'Chest measurement in inches' },
+                        waist: { type: 'string', description: 'Waist measurement in inches' },
+                        length: { type: 'string', description: 'Length measurement in inches' },
+                        shoulders: { type: 'string', description: 'Shoulder width in inches' },
+                        sleeves: { type: 'string', description: 'Sleeve length in inches' }
+                      }
+                    },
+                    XL: {
+                      type: 'object',
+                      properties: {
+                        chest: { type: 'string', description: 'Chest measurement in inches' },
+                        waist: { type: 'string', description: 'Waist measurement in inches' },
+                        length: { type: 'string', description: 'Length measurement in inches' },
+                        shoulders: { type: 'string', description: 'Shoulder width in inches' },
+                        sleeves: { type: 'string', description: 'Sleeve length in inches' }
+                      }
+                    }
+                  }
+                }
               },
               required: ['name']
             }
@@ -86,7 +132,7 @@ serve(async (req) => {
             price: extractedData.price || 'Price not found',
             sizes: extractedData.sizes || ['S', 'M', 'L', 'XL'],
             images: extractedData.images || [scrapedData.data?.metadata?.ogImage] || [],
-            sizeChart: {},
+            sizeChart: extractedData.sizeChart || {},
             description: extractedData.description || scrapedData.data?.metadata?.description || '',
             material: extractedData.material || '',
             brand: extractedData.brand || '',
@@ -94,6 +140,7 @@ serve(async (req) => {
           };
           
           console.log('Successfully extracted clothing data from Firecrawl:', clothingData);
+          console.log('Size chart extracted:', clothingData.sizeChart);
         } else {
           console.warn('Firecrawl returned empty extracted data, using fallback');
           throw new Error('No extracted data from Firecrawl');

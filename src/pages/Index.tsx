@@ -149,7 +149,7 @@ const Index = () => {
         setUserData(prev => ({ ...prev, photo: e.target?.result as string }));
         // Stay on step 2 for 2 seconds before moving to step 3
         setTimeout(() => {
-          setCurrentStep(3);
+          setCurrentStep(2);
         }, 2000);
       };
       reader.readAsDataURL(file);
@@ -157,23 +157,16 @@ const Index = () => {
   };
 
   const handleAnalyze = async () => {
-    if (!clothingData || !userData.photo) {
+    if (!userData.photo || !clothingData) {
       toast({
-        title: "Missing Data",
-        description: "Please complete all steps before analyzing",
+        title: "Missing Information",
+        description: "Please upload a photo and select clothing first.",
         variant: "destructive"
       });
       return;
     }
 
     setIsAnalyzing(true);
-    setAnalyzeProgress(5); // Start progress
-    analyzeProgressRef.current = 5;
-    if (analyzeIntervalRef.current) clearInterval(analyzeIntervalRef.current);
-    analyzeIntervalRef.current = setInterval(() => {
-      analyzeProgressRef.current = Math.min(analyzeProgressRef.current + Math.random() * 0.5 + 0.2, 92);
-      setAnalyzeProgress(analyzeProgressRef.current);
-    }, 250); // 25 seconds total (250ms * 100 steps = 25 seconds)
     
     try {
       // Call Supabase edge function for AI fit analysis
@@ -201,13 +194,6 @@ const Index = () => {
         overlay: data.overlay || userData.photo // Use the generated overlay image
       });
       
-      setAnalyzeProgress(100); // Complete
-      analyzeProgressRef.current = 100;
-      if (analyzeIntervalRef.current) {
-        clearInterval(analyzeIntervalRef.current);
-        analyzeIntervalRef.current = null;
-      }
-      
       setCurrentStep(4);
       
       toast({
@@ -215,12 +201,6 @@ const Index = () => {
         description: "Your AI-powered fit analysis is ready!"
       });
     } catch (error) {
-      setAnalyzeProgress(0);
-      analyzeProgressRef.current = 0;
-      if (analyzeIntervalRef.current) {
-        clearInterval(analyzeIntervalRef.current);
-        analyzeIntervalRef.current = null;
-      }
       console.error('Error analyzing fit:', error);
       toast({
         title: "Analysis Failed",
@@ -228,15 +208,7 @@ const Index = () => {
         variant: "destructive"
       });
     } finally {
-      setTimeout(() => {
-        setIsAnalyzing(false);
-        setAnalyzeProgress(0);
-        analyzeProgressRef.current = 0;
-        if (analyzeIntervalRef.current) {
-          clearInterval(analyzeIntervalRef.current);
-          analyzeIntervalRef.current = null;
-        }
-      }, 500);
+      setIsAnalyzing(false);
     }
   };
 
@@ -266,7 +238,7 @@ const Index = () => {
         {/* Progress Steps */}
         <div className="flex justify-center mb-12">
           <div className="flex items-center space-x-6">
-            {[1, 2, 3, 4].map((step) => (
+            {[1, 2, 4].map((step) => (
               <div key={step} className="flex items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shadow-lg transition-colors duration-300 border-2 cursor-pointer ${
@@ -280,7 +252,7 @@ const Index = () => {
                   style={{ pointerEvents: step < currentStep ? 'auto' : 'none', opacity: step < currentStep ? 1 : 0.7 }}
                   title={step < currentStep ? `Go back to step ${step}` : undefined}
                 >
-                  {step}
+                  {step === 4 ? '3' : step}
                 </div>
                 {step < 4 && (
                   <div className={`w-16 h-1 mx-2 rounded-full transition-colors duration-300 ${
@@ -431,7 +403,7 @@ const Index = () => {
             </Card>
             </div>
           )}
-          {currentStep === 3 && (
+          {currentStep === 4 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
             {/* Step 3: Measurements */}
               <Card className="glassmorphism-card p-10 text-lg">
