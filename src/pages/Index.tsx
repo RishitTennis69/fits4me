@@ -405,67 +405,18 @@ const Index = () => {
           )}
           {currentStep === 3 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
-            {/* Step 3: Measurements */}
+            {/* Step 3: Preferred Size Selection */}
               <Card className="glassmorphism-card p-10 text-lg">
               <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-purple-700">
-                    <User className="h-6 w-6 text-purple-500" />
-                  Step 3: Your Measurements
+                    <Shirt className="h-6 w-6 text-purple-500" />
+                  Step 3: Select Your Preferred Size
                 </CardTitle>
               </CardHeader>
                 <CardContent className="space-y-8">
                 <div>
-                  <Label className="text-base">Height:</Label>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Input
-                      id="feet-input"
-                      type="number"
-                      min="0"
-                      max="8"
-                      value={userData.feet}
-                      onChange={e => {
-                        const feet = Math.max(0, Math.min(8, Number(e.target.value)));
-                        updateHeight(feet, userData.inches);
-                      }}
-                      className="glassmorphism-input text-xl py-2 px-4 w-20 text-center"
-                      disabled={currentStep < 3}
-                    />
-                    <span className="text-xl font-bold text-purple-700">ft</span>
-                    <Input
-                      id="inches-input"
-                      type="number"
-                      min="0"
-                      max="11"
-                      value={userData.inches}
-                      onChange={e => {
-                        const inches = Math.max(0, Math.min(11, Number(e.target.value)));
-                        updateHeight(userData.feet, inches);
-                      }}
-                      className="glassmorphism-input text-xl py-2 px-4 w-20 text-center"
-                      disabled={currentStep < 3}
-                    />
-                    <span className="text-xl font-bold text-purple-700">in</span>
-                    <span className="text-lg text-gray-600 ml-2">
-                      ({userData.height} inches total)
-                    </span>
-                  </div>
-                </div>
-                <div>
-                    <Label className="text-base" htmlFor="weight-input">Weight (lbs):</Label>
-                    <Input
-                      id="weight-input"
-                      type="number"
-                      value={userData.weight}
-                      onChange={e => {
-                        const val = Math.max(0, Number(e.target.value));
-                        setUserData(prev => ({ ...prev, weight: val }));
-                      }}
-                      className="mt-2 glassmorphism-input text-xl py-2 px-4 w-40"
-                    disabled={currentStep < 3}
-                  />
-                </div>
-                <div>
                     <Label className="text-base">Preferred Size</Label>
+                    <p className="text-sm text-gray-600 mb-4">Choose your preferred size. Our AI will analyze your photo and compare your measurements with the product's size chart to give you the best fit recommendation.</p>
                     <div className="flex gap-3 mt-3">
                     {clothingData?.sizes.map(size => (
                       <Button
@@ -473,7 +424,6 @@ const Index = () => {
                         variant={userData.preferredSize === size ? "default" : "outline"}
                         size="sm"
                         onClick={() => setUserData(prev => ({ ...prev, preferredSize: size }))}
-                        disabled={currentStep < 3}
                           className={`rounded-full px-4 py-2 font-semibold transition-all duration-200 ${userData.preferredSize === size ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg scale-105' : 'bg-white/60 text-blue-700 border-blue-200 hover:bg-blue-50'}`}
                       >
                         {size}
@@ -481,25 +431,23 @@ const Index = () => {
                     ))}
                   </div>
                 </div>
-                {currentStep >= 3 && (
-                  <Button 
-                    onClick={handleAnalyze}
-                    disabled={isAnalyzing}
-                      className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300"
-                  >
-                    {isAnalyzing ? (
-                      <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
-                        Analyzing Fit...
-                      </>
-                    ) : (
-                      <>
-                          <Shirt className="h-5 w-5 mr-2" />
-                        Analyze Fit
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Button 
+                  onClick={handleAnalyze}
+                  disabled={isAnalyzing}
+                    className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300"
+                >
+                  {isAnalyzing ? (
+                    <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
+                      Analyzing Fit...
+                    </>
+                  ) : (
+                    <>
+                        <Shirt className="h-5 w-5 mr-2" />
+                      Analyze Fit
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
           </div>
