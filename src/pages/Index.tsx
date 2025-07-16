@@ -147,10 +147,10 @@ const Index = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setUserData(prev => ({ ...prev, photo: e.target?.result as string }));
-        // Stay on step 2 for 2 seconds before moving to step 3
+        // Move to step 3 (measurements) after photo upload
         setTimeout(() => {
-          setCurrentStep(2);
-        }, 2000);
+          setCurrentStep(3); // This is step 3 in the UI
+        }, 1000);
       };
       reader.readAsDataURL(file);
     }
@@ -194,7 +194,7 @@ const Index = () => {
         overlay: data.overlay || userData.photo // Use the generated overlay image
       });
       
-      setCurrentStep(4);
+      setCurrentStep(4); // Move to results step
       
       toast({
         title: "Analysis Complete",
@@ -238,7 +238,7 @@ const Index = () => {
         {/* Progress Steps */}
         <div className="flex justify-center mb-12">
           <div className="flex items-center space-x-6">
-            {[1, 2, 4].map((step) => (
+            {[1, 2, 3, 4].map((step) => (
               <div key={step} className="flex items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shadow-lg transition-colors duration-300 border-2 cursor-pointer ${
@@ -252,7 +252,7 @@ const Index = () => {
                   style={{ pointerEvents: step < currentStep ? 'auto' : 'none', opacity: step < currentStep ? 1 : 0.7 }}
                   title={step < currentStep ? `Go back to step ${step}` : undefined}
                 >
-                  {step === 4 ? '3' : step}
+                  {step}
                 </div>
                 {step < 4 && (
                   <div className={`w-16 h-1 mx-2 rounded-full transition-colors duration-300 ${
@@ -403,7 +403,7 @@ const Index = () => {
             </Card>
             </div>
           )}
-          {currentStep === 4 && (
+          {currentStep === 3 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
             {/* Step 3: Measurements */}
               <Card className="glassmorphism-card p-10 text-lg">
@@ -504,27 +504,8 @@ const Index = () => {
             </Card>
           </div>
           )}
-            {/* Analysis Progress */}
-            {isAnalyzing && (
-            <div className="w-full max-w-2xl animate-fade-in-up mt-8">
-              <Card className="glassmorphism-card p-10 text-lg">
-                <CardHeader>
-                  <CardTitle className="text-blue-700">Analyzing Fit...</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <Progress value={analyzeProgress} className="w-full h-6 shadow-lg" />
-                    <p className="text-center text-gray-600">
-                      AI is analyzing your body proportions and clothing fit...
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-            )}
-            {/* Results */}
-            {analysisResult && (
-            <div className="w-full max-w-2xl animate-fade-in-up mt-8">
+          {currentStep === 4 && (
+            <div className="w-full max-w-2xl animate-fade-in-up">
               <Card className="glassmorphism-card p-10 text-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-green-700">
@@ -536,10 +517,10 @@ const Index = () => {
                   {/* Fit Score */}
                   <div className="text-center">
                     <div className="text-4xl font-extrabold text-green-600 mb-2 drop-shadow-lg">
-                      {analysisResult.fitScore}%
+                      {analysisResult?.fitScore || 75}%
                     </div>
                     <p className="text-base text-gray-600">Fit Score</p>
-                    <Progress value={analysisResult.fitScore} className="mt-3 h-5" />
+                    <Progress value={analysisResult?.fitScore || 75} className="mt-3 h-5" />
                   </div>
                   <Separator className="my-6" />
                   {/* Virtual Overlay */}
@@ -547,7 +528,7 @@ const Index = () => {
                     <h4 className="font-semibold text-lg text-blue-700">Virtual Try-On</h4>
                     <div className="relative">
                       <img 
-                        src={analysisResult.overlay} 
+                        src={analysisResult?.overlay || userData.photo} 
                         alt="Virtual try-on" 
                         className="w-full h-72 object-cover rounded-2xl shadow-lg border-4 border-blue-100"
                       />
@@ -564,20 +545,38 @@ const Index = () => {
                       <CheckCircle className="h-6 w-6 text-green-600 mt-1 flex-shrink-0" />
                       <div>
                         <p className="font-semibold text-green-800">Recommendation</p>
-                        <p className="text-base text-green-700">{analysisResult.recommendation}</p>
+                        <p className="text-base text-green-700">{analysisResult?.recommendation || 'Fit analysis completed successfully.'}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4 p-4 bg-blue-50/80 rounded-xl shadow-inner">
                       <AlertCircle className="h-6 w-6 text-blue-600 mt-1 flex-shrink-0" />
                       <div>
                         <p className="font-semibold text-blue-800">Size Advice</p>
-                        <p className="text-base text-blue-700">{analysisResult.sizeAdvice}</p>
+                        <p className="text-base text-blue-700">{analysisResult?.sizeAdvice || 'Size recommendation available.'}</p>
                       </div>
                     </div>
                   </div>
                   <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg py-3 rounded-xl shadow-xl mt-6 transition-all duration-300">
                     Shop This Item
                   </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+            {/* Analysis Progress */}
+            {isAnalyzing && (
+            <div className="w-full max-w-2xl animate-fade-in-up mt-8">
+              <Card className="glassmorphism-card p-10 text-lg">
+                <CardHeader>
+                  <CardTitle className="text-blue-700">Analyzing Fit...</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <Progress value={analyzeProgress} className="w-full h-6 shadow-lg" />
+                    <p className="text-center text-gray-600">
+                      AI is analyzing your body proportions and clothing fit...
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </div>

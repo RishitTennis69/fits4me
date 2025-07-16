@@ -230,7 +230,7 @@ Respond in this exact JSON format:
         }
         if (!analysisResult) {
           aiMessage = 'AI fit analysis response was invalid.';
-        } else {
+      } else {
           // Defensive: Validate fitScore
           let fitScoreValid = false;
           if (typeof analysisResult?.fitScore === 'number' && analysisResult.fitScore >= 0 && analysisResult.fitScore <= 100) {
