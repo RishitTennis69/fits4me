@@ -1,4 +1,7 @@
+// deno-lint-ignore-file
+// @ts-ignore Deno types for VSCode/TypeScript
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+// @ts-ignore Deno types for VSCode/TypeScript
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -13,6 +16,7 @@ serve(async (req) => {
 
   try {
     const { url } = await req.json();
+    // @ts-ignore Deno types for VSCode/TypeScript
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
 
     console.log('Scraping clothing URL:', url);
