@@ -49,50 +49,31 @@ serve(async (req) => {
                 brand: { type: 'string', description: 'Brand name' },
                 sizeChart: {
                   type: 'object',
-                  description: 'Detailed size chart with measurements for each size',
-                  properties: {
-                    S: {
-                      type: 'object',
-                      properties: {
-                        chest: { type: 'string', description: 'Chest measurement in inches' },
-                        waist: { type: 'string', description: 'Waist measurement in inches' },
-                        length: { type: 'string', description: 'Length measurement in inches' },
-                        shoulders: { type: 'string', description: 'Shoulder width in inches' },
-                        sleeves: { type: 'string', description: 'Sleeve length in inches' }
-                      }
-                    },
-                    M: {
-                      type: 'object',
-                      properties: {
-                        chest: { type: 'string', description: 'Chest measurement in inches' },
-                        waist: { type: 'string', description: 'Waist measurement in inches' },
-                        length: { type: 'string', description: 'Length measurement in inches' },
-                        shoulders: { type: 'string', description: 'Shoulder width in inches' },
-                        sleeves: { type: 'string', description: 'Sleeve length in inches' }
-                      }
-                    },
-                    L: {
-                      type: 'object',
-                      properties: {
-                        chest: { type: 'string', description: 'Chest measurement in inches' },
-                        waist: { type: 'string', description: 'Waist measurement in inches' },
-                        length: { type: 'string', description: 'Length measurement in inches' },
-                        shoulders: { type: 'string', description: 'Shoulder width in inches' },
-                        sleeves: { type: 'string', description: 'Sleeve length in inches' }
-                      }
-                    },
-                    XL: {
-                      type: 'object',
-                      properties: {
-                        chest: { type: 'string', description: 'Chest measurement in inches' },
-                        waist: { type: 'string', description: 'Waist measurement in inches' },
-                        length: { type: 'string', description: 'Length measurement in inches' },
-                        shoulders: { type: 'string', description: 'Shoulder width in inches' },
-                        sleeves: { type: 'string', description: 'Sleeve length in inches' }
-                      }
+                  description: 'Detailed size chart with measurements for each available size. Extract ALL available sizes (XS, S, M, L, XL, XXL, etc.) and ALL measurements (chest, waist, hips, length, shoulders, sleeves, inseam, etc.)',
+                  additionalProperties: {
+                    type: 'object',
+                    properties: {
+                      chest: { type: 'string', description: 'Chest measurement in inches' },
+                      waist: { type: 'string', description: 'Waist measurement in inches' },
+                      hips: { type: 'string', description: 'Hip measurement in inches' },
+                      length: { type: 'string', description: 'Length measurement in inches' },
+                      shoulders: { type: 'string', description: 'Shoulder width in inches' },
+                      sleeves: { type: 'string', description: 'Sleeve length in inches' },
+                      inseam: { type: 'string', description: 'Inseam length in inches' },
+                      neck: { type: 'string', description: 'Neck circumference in inches' },
+                      armhole: { type: 'string', description: 'Armhole measurement in inches' },
+                      bicep: { type: 'string', description: 'Bicep circumference in inches' },
+                      thigh: { type: 'string', description: 'Thigh circumference in inches' },
+                      knee: { type: 'string', description: 'Knee circumference in inches' },
+                      ankle: { type: 'string', description: 'Ankle circumference in inches' }
                     }
                   }
-                }
+                },
+                color: { type: 'string', description: 'Primary color of the item' },
+                style: { type: 'string', description: 'Style information (casual, formal, athletic, etc.)' },
+                fit: { type: 'string', description: 'Fit information (slim, regular, loose, etc.)' },
+                care: { type: 'string', description: 'Care instructions' },
+                features: { type: 'string', description: 'Special features or details' }
               },
               required: ['name']
             }
@@ -136,11 +117,23 @@ serve(async (req) => {
             description: extractedData.description || scrapedData.data?.metadata?.description || '',
             material: extractedData.material || '',
             brand: extractedData.brand || '',
+            color: extractedData.color || '',
+            style: extractedData.style || '',
+            fit: extractedData.fit || '',
+            care: extractedData.care || '',
+            features: extractedData.features || '',
             scrapedContent: scrapedData.data?.markdown || ''
           };
           
           console.log('Successfully extracted clothing data from Firecrawl:', clothingData);
           console.log('Size chart extracted:', clothingData.sizeChart);
+          console.log('Additional details:', {
+            color: clothingData.color,
+            style: clothingData.style,
+            fit: clothingData.fit,
+            care: clothingData.care,
+            features: clothingData.features
+          });
         } else {
           console.warn('Firecrawl returned empty extracted data, using fallback');
           throw new Error('No extracted data from Firecrawl');
@@ -179,16 +172,48 @@ serve(async (req) => {
         const priceMatch = html.match(/\$[\d,]+\.?\d*/);
         const imageMatch = html.match(/<img[^>]*src="([^"]+)"[^>]*>/i);
         const descriptionMatch = html.match(/<meta[^>]*name="description"[^>]*content="([^"]+)"/i);
+        
+        // Enhanced size chart extraction from HTML
+        const sizeChart: any = {};
+        const sizeMatches = html.match(/(?:size|Size)\s*[:\-]?\s*(XS|S|M|L|XL|XXL|XXXL)/gi);
+        const availableSizes = sizeMatches ? [...new Set(sizeMatches.map(s => s.toUpperCase()))] : ['S', 'M', 'L', 'XL'];
+        
+        // Try to extract measurements from size charts in HTML
+        const measurementPatterns = [
+          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:chest|bust)/gi,
+          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:waist)/gi,
+          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:hip|hips)/gi,
+          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:length)/gi,
+          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:shoulder|shoulders)/gi,
+          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:sleeve|sleeves)/gi
+        ];
+        
+        // Extract color information
+        const colorMatch = html.match(/(?:color|colour|Color|Colour)\s*[:\-]?\s*([a-zA-Z\s]+)/i);
+        const color = colorMatch ? colorMatch[1].trim() : '';
+        
+        // Extract style information
+        const styleMatch = html.match(/(?:style|Style)\s*[:\-]?\s*([a-zA-Z\s]+)/i);
+        const style = styleMatch ? styleMatch[1].trim() : '';
+        
+        // Extract fit information
+        const fitMatch = html.match(/(?:fit|Fit)\s*[:\-]?\s*(slim|regular|loose|relaxed|oversized)/i);
+        const fit = fitMatch ? fitMatch[1].trim() : '';
 
         clothingData = {
           name: ogTitleMatch?.[1] || titleMatch?.[1] || 'Unknown Item',
           price: priceMatch?.[0] || 'Price not found',
-          sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'], // Default sizes
+          sizes: availableSizes,
           images: imageMatch?.[1] ? [imageMatch[1]] : [],
-          sizeChart: {},
+          sizeChart: sizeChart,
           description: descriptionMatch?.[1] || 'No description available',
           material: 'Material information not available',
           brand: '',
+          color: color,
+          style: style,
+          fit: fit,
+          care: 'Care instructions not available',
+          features: 'Features not available',
           scrapedContent: html.substring(0, 1000) // First 1000 chars for debugging
         };
         
@@ -205,6 +230,11 @@ serve(async (req) => {
           description: 'Unable to scrape product information. Please try again or enter details manually.',
           material: 'Unknown',
           brand: '',
+          color: '',
+          style: '',
+          fit: '',
+          care: '',
+          features: '',
           scrapedContent: ''
         };
       }

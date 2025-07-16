@@ -68,15 +68,19 @@ Please analyze the body proportions and estimate precise measurements for clothi
 
 IMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.
 
+CRITICAL: You must estimate the person's height from the image. Look at their proportions, compare to objects in the background, or use visual cues to estimate their actual height in inches. Do NOT assume a default height.
+
 Analyze the body and provide:
 1. Body type assessment
-2. Precise measurements in inches
+2. Precise measurements in inches (including estimated height from image)
 3. Fit recommendations
 
 Respond in this exact JSON format:
 {
   "bodyType": "slim|average|full",
   "bodyShape": "rectangular|triangle|inverted-triangle|hourglass",
+  "estimatedHeight": number,
+  "estimatedWeight": number,
   "measurements": {
     "chest": number,
     "waist": number,
@@ -132,7 +136,15 @@ Respond in this exact JSON format:
         }
         
         if (detailedMeasurements && detailedMeasurements.measurements) {
-          bodyAssessment = `Detailed body analysis: ${detailedMeasurements.bodyType} body type, ${detailedMeasurements.bodyShape} shape. Measurements: Chest ${detailedMeasurements.measurements.chest}", Waist ${detailedMeasurements.measurements.waist}", Shoulders ${detailedMeasurements.measurements.shoulders}". ${detailedMeasurements.fitNotes}`;
+          // Use AI-estimated height and weight if available
+          const estimatedHeight = detailedMeasurements.estimatedHeight || userData.height;
+          const estimatedWeight = detailedMeasurements.estimatedWeight || userData.weight;
+          
+          bodyAssessment = `Detailed body analysis: ${detailedMeasurements.bodyType} body type, ${detailedMeasurements.bodyShape} shape. Estimated height: ${estimatedHeight} inches, estimated weight: ${estimatedWeight} lbs. Measurements: Chest ${detailedMeasurements.measurements.chest}", Waist ${detailedMeasurements.measurements.waist}", Shoulders ${detailedMeasurements.measurements.shoulders}". ${detailedMeasurements.fitNotes}`;
+          
+          // Update userData with AI estimates for consistency
+          userData.height = estimatedHeight;
+          userData.weight = estimatedWeight;
         } else {
           bodyAssessment = bodyContent;
         }
@@ -158,7 +170,107 @@ Respond in this exact JSON format:
 
     console.log('Body analysis:', bodyAssessment);
 
-    // 2. OpenAI GPT-4: Fit analysis
+    // 2. AI Clothing Analysis: Analyze the clothing item in detail for virtual try-on
+    let detailedClothingDescription = clothingData.description;
+    let extractedTextLogo = '';
+    let extractedColor = '';
+    let clothingStyleAnalysis = '';
+    
+    if (clothingData.images && clothingData.images.length > 0) {
+      try {
+        console.log('Analyzing clothing image for detailed description...');
+        
+        const clothingImageContent = {
+          type: 'image_url',
+          image_url: {
+            url: clothingData.images[0]
+          }
+        };
+        
+        const clothingAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            max_tokens: 1000,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: `Analyze this clothing item in extreme detail for virtual try-on generation.
+
+IMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.
+
+Please provide:
+1. Primary color (be very specific: navy blue, forest green, etc.)
+2. Any visible text, logos, or numbers on the item
+3. Material and fabric details
+4. Style and fit characteristics
+5. Unique features or design elements
+6. Overall aesthetic and visual appeal
+
+Respond in this exact JSON format:
+{
+  "primaryColor": "string (specific color name)",
+  "textLogoNumber": "string (any visible text/logo/number or 'none')",
+  "materialDetails": "string (detailed material description)",
+  "styleCharacteristics": "string (style, fit, design details)",
+  "uniqueFeatures": "string (special features or design elements)",
+  "aesthetic": "string (overall visual appeal and style)",
+  "detailedDescription": "string (comprehensive description for AI image generation)"
+}`
+                  },
+                  clothingImageContent
+                ]
+              }
+            ]
+          }),
+        });
+
+        if (clothingAnalysisResponse.ok) {
+          const clothingAnalysisData = await clothingAnalysisResponse.json();
+          const clothingAnalysis = clothingAnalysisData.choices?.[0]?.message?.content;
+          
+          if (clothingAnalysis) {
+            try {
+              const analysis = JSON.parse(clothingAnalysis);
+              console.log('Clothing analysis result:', analysis);
+              
+              extractedColor = analysis.primaryColor || clothingData.color || '';
+              extractedTextLogo = analysis.textLogoNumber || '';
+              detailedClothingDescription = analysis.detailedDescription || clothingData.description;
+              clothingStyleAnalysis = `Style: ${analysis.styleCharacteristics}. Features: ${analysis.uniqueFeatures}. Aesthetic: ${analysis.aesthetic}. Material: ${analysis.materialDetails}`;
+              
+              console.log('Enhanced clothing description:', {
+                color: extractedColor,
+                textLogo: extractedTextLogo,
+                description: detailedClothingDescription,
+                styleAnalysis: clothingStyleAnalysis
+              });
+            } catch (parseError) {
+              console.error('Failed to parse clothing analysis JSON:', parseError);
+              detailedClothingDescription = clothingData.description;
+            }
+          }
+        } else {
+          console.warn('Clothing analysis failed, using fallback description');
+          detailedClothingDescription = clothingData.description;
+        }
+      } catch (clothingError) {
+        console.error('Error analyzing clothing image:', clothingError);
+        detailedClothingDescription = clothingData.description;
+      }
+    } else {
+      console.log('No clothing image available for analysis, using text description');
+      detailedClothingDescription = clothingData.description;
+    }
+
+    // 3. OpenAI GPT-4: Fit analysis
     const fitAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -171,7 +283,7 @@ Respond in this exact JSON format:
         messages: [
           {
             role: 'user',
-            content: `CLOTHING ITEM:\nName: ${clothingData.name}\nBrand: ${clothingData.brand || 'N/A'}\nAvailable Sizes: ${clothingData.sizes?.join(', ')}\nSize Chart: ${JSON.stringify(clothingData.sizeChart)}\nDescription: ${clothingData.description}\nMaterial: ${clothingData.material}\n\nUSER BODY ANALYSIS:\n${bodyAssessment}\n\nUSER PREFERRED SIZE:\n${userData.preferredSize}${detailedMeasurements ? `\nDetailed Measurements: ${JSON.stringify(detailedMeasurements.measurements)}` : ''}\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks. If you cannot provide a fit analysis, respond with a clear message explaining why.\n\nPlease provide:\n1. Fit Score (0-100) for the preferred size ${userData.preferredSize} (fitScore must be a number between 0 and 100, never a string, null, or N/A)\n2. Detailed fit recommendation\n3. Alternative size suggestions if needed (e.g., would XS or M be better?)\n4. Brand comparison: If you have size charts for other brands, compare how this size would fit in those brands (e.g., "Nike S is smaller than Adidas S"). If no data, say so.\n5. Specific advice about how this item will fit (loose, tight, perfect, etc.)\n6. Measurement comparison: Compare user's actual measurements with the product's size chart measurements\n\nRespond in JSON format ONLY:\n{\n  "fitScore": number,\n  "recommendation": "string",\n  "sizeAdvice": "string",\n  "alternativeSize": "string or null",\n  "fitDetails": "string",\n  "brandComparison": "string",\n  "measurementComparison": "string"\n}`
+            content: `CLOTHING ITEM:\nName: ${clothingData.name}\nBrand: ${clothingData.brand || 'N/A'}\nAvailable Sizes: ${clothingData.sizes?.join(', ')}\nSize Chart: ${JSON.stringify(clothingData.sizeChart)}\nDescription: ${detailedClothingDescription}\nMaterial: ${clothingData.material}\nColor: ${extractedColor || clothingData.color || 'N/A'}\nStyle: ${clothingStyleAnalysis || clothingData.style || 'N/A'}\nFit: ${clothingData.fit || 'N/A'}\nFeatures: ${clothingData.features || 'N/A'}\n\nUSER BODY ANALYSIS:\n${bodyAssessment}\n\nUSER PREFERRED SIZE:\n${userData.preferredSize}${detailedMeasurements ? `\nDetailed Measurements: ${JSON.stringify(detailedMeasurements.measurements)}` : ''}\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks. If you cannot provide a fit analysis, respond with a clear message explaining why.\n\nPlease provide:\n1. Fit Score (0-100) for the preferred size ${userData.preferredSize} (fitScore must be a number between 0 and 100, never a string, null, or N/A)\n2. Detailed fit recommendation\n3. Alternative size suggestions if needed (e.g., would XS or M be better?)\n4. Brand comparison: If you have size charts for other brands, compare how this size would fit in those brands (e.g., "Nike S is smaller than Adidas S"). If no data, say so.\n5. Specific advice about how this item will fit (loose, tight, perfect, etc.)\n6. Measurement comparison: Compare user's actual measurements with the product's size chart measurements\n\nRespond in JSON format ONLY:\n{\n  "fitScore": number,\n  "recommendation": "string",\n  "sizeAdvice": "string",\n  "alternativeSize": "string or null",\n  "fitDetails": "string",\n  "brandComparison": "string",\n  "measurementComparison": "string"\n}`
           }
         ]
       }),
@@ -1336,98 +1448,16 @@ Respond in this exact JSON format:
     }
 
     // 0. Claude 4 Sonnet: Describe the user's clothing image in detail
-    let detailedClothingDescription = clothingData.description;
-    let extractedTextLogo = '';
-    let extractedColor = '';
-    if (clothingData.image) {
-      try {
-        const clothingImageContent = clothingData.image.startsWith('data:image')
-          ? {
-              type: 'image_url',
-              image_url: {
-                url: clothingData.image
-              }
-            }
-          : null;
-        if (clothingImageContent) {
-          const clothingDescResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${openaiApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              max_tokens: 600,
-              messages: [
-                {
-                  role: 'user',
-                  content: [
-                    {
-                      type: 'text',
-                      text: `Describe this clothing item in extreme detail for an AI image generator.\n- State the primary color clearly (e.g., 'The hoodie is blue.').\n- If there is any visible text, logo, or number on the item, extract it and state it clearly as a separate line: TEXT/LOGO/NUMBER: ...\nInclude color, material, style, patterns, logos, text, numbers, and any unique features.`
-                    },
-                    clothingImageContent
-                  ]
-                }
-              ]
-            }),
-          });
-          if (clothingDescResponse.ok) {
-            let clothingDescData = await clothingDescResponse.json();
-            let clothingDesc = clothingDescData.choices?.[0]?.message?.content;
-            // If content is an array, extract the text
-            if (Array.isArray(clothingDesc) && clothingDesc[0]?.text) {
-              clothingDesc = clothingDesc[0].text;
-            }
-            clothingDesc = clothingDesc?.trim();
-            if (clothingDesc && clothingDesc.length > 20) {
-              detailedClothingDescription = clothingDesc;
-              // Try to extract the TEXT/LOGO/NUMBER line
-              const textLogoMatch = clothingDesc.match(/TEXT\/LOGO\/NUMBER:\s*(.*)/i);
-              if (textLogoMatch && textLogoMatch[1]) {
-                extractedTextLogo = textLogoMatch[1].trim();
-                console.log('Extracted text/logo/number from Claude:', extractedTextLogo);
-              }
-              // Try to extract the color (look for lines like 'The hoodie is blue.' or 'Color: ...')
-              const colorMatch = clothingDesc.match(/(?:The [^\n]+ is|Color:)\s*([a-zA-Z ]+)/i);
-              if (colorMatch && colorMatch[1]) {
-                extractedColor = colorMatch[1].trim();
-                console.log('Extracted color from Claude:', extractedColor);
-              }
-              console.log('Detailed clothing description from Claude:', detailedClothingDescription);
-            } else {
-              console.warn('Claude clothing description was too short or missing, using fallback.');
-              detailedClothingDescription = clothingData.description;
-              extractedTextLogo = '';
-              extractedColor = clothingData.color || '';
-            }
-          } else {
-            const errorText = await clothingDescResponse.text();
-            console.error('Claude clothing description error:', errorText);
-            detailedClothingDescription = clothingData.description;
-            extractedTextLogo = '';
-            extractedColor = clothingData.color || '';
-          }
-        }
-      } catch (descError) {
-        console.error('Error getting detailed clothing description from Claude:', descError);
-        detailedClothingDescription = clothingData.description;
-        extractedTextLogo = '';
-        extractedColor = clothingData.color || '';
-      }
+    let clothingImagePrompt = '';
+    if (clothingData.images && clothingData.images.length > 0) {
+      clothingImagePrompt = `A photorealistic image of a faceless mannequin with body proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height} inches, weight: ${userData.weight} lbs), wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${extractedColor ? `The most important detail is the color: ${extractedColor}.` : ''} ${extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : ''} The fit should be realistic for the given size and body. The color of the clothing must be exactly as described. Emphasize the color accuracy above all else. Neutral background. No text, no logos, no visible brand names except as described. NOTE: This is an AI-generated image and cannot use a real clothing image as input.`;
+    } else {
+      clothingImagePrompt = `A photorealistic image of a faceless mannequin with body proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height} inches, weight: ${userData.weight} lbs), wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. The fit should be realistic for the given size and body. The color of the clothing must be exactly as described. Emphasize the color accuracy above all else. Neutral background. No text, no logos, no visible brand names except as described. NOTE: This is an AI-generated image and cannot use a real clothing image as input.`;
     }
 
     // 3. DALL-E 3: Generate virtual try-on image
     console.log('Starting virtual try-on image generation...');
     console.log('Clothing data for image generation:', clothingData);
-    
-    // Build a highly specific mannequin prompt
-    const colorDetail = extractedColor ? `The most important detail is the color: ${extractedColor}.` : (clothingData.color ? `The most important detail is the color: ${clothingData.color}.` : '');
-    const textLogoDetail = extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : '';
-    const mannequinPrompt = `A photorealistic image of a faceless mannequin with body proportions: ${bodyAssessment.replace(/\n/g, ' ')} (height: ${userData.height} inches, weight: ${userData.weight} lbs), wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${colorDetail} ${textLogoDetail} The fit should be realistic for the given size and body. The color of the clothing must be exactly as described. Emphasize the color accuracy above all else. Neutral background. No text, no logos, no visible brand names except as described. NOTE: This is an AI-generated image and cannot use a real clothing image as input.`;
-    
-    console.log('DALL-E mannequin prompt:', mannequinPrompt);
     
     const imageGenResponse = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
@@ -1437,7 +1467,7 @@ Respond in this exact JSON format:
       },
       body: JSON.stringify({
         model: "dall-e-3",
-        prompt: mannequinPrompt,
+        prompt: clothingImagePrompt,
         n: 1,
         size: "1024x1024",
         quality: "hd"
