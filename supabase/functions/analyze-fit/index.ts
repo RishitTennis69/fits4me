@@ -43,7 +43,7 @@ serve(async (req) => {
       };
     }
 
-    // 1. OpenAI GPT-4o: Analyze the user's body from the photo
+    // 1. OpenAI GPT-4o-mini: Analyze the user's body from the photo
     let bodyAssessment = '';
     let detailedMeasurements: any = null;
     let usedManualMeasurements = false;
@@ -54,7 +54,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         max_tokens: 1500,
         messages: [
           {
@@ -279,9 +279,7 @@ Respond in this exact JSON format:
         sizeAdvice: algorithmResult.sizeAdvice,
         alternativeSize: algorithmResult.alternativeSize,
         fitDetails: algorithmResult.fitDetails,
-        brandComparison: algorithmResult.brandComparison,
-        overlay: null,
-        message: 'Fit analysis completed using our advanced 10/10 in-house algorithms with visual analysis, trend awareness, and personal style learning.'
+        brandComparison: algorithmResult.brandComparison
       };
     }
 
@@ -1359,7 +1357,7 @@ Respond in this exact JSON format:
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'gpt-4o',
+              model: 'gpt-4o-mini',
               max_tokens: 600,
               messages: [
                 {
@@ -1420,7 +1418,7 @@ Respond in this exact JSON format:
       }
     }
 
-    // 3. GPT-4o: Generate virtual try-on image
+    // 3. DALL-E 3: Generate virtual try-on image
     console.log('Starting virtual try-on image generation...');
     console.log('Clothing data for image generation:', clothingData);
     
@@ -1459,8 +1457,8 @@ Respond in this exact JSON format:
       }
     } else {
       const errorText = await imageGenResponse.text();
-      console.error('GPT-4o image generation failed:', imageGenResponse.status, errorText);
-      throw new Error(`GPT-4o image generation failed: ${imageGenResponse.status} - ${errorText}`);
+      console.error('DALL-E 3 image generation failed:', imageGenResponse.status, errorText);
+      throw new Error(`DALL-E 3 image generation failed: ${imageGenResponse.status} - ${errorText}`);
     }
 
     // Fallback if no image URL
