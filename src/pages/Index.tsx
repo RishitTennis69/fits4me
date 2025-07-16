@@ -17,7 +17,7 @@ interface ClothingData {
   name: string;
   price: string;
   sizes: string[];
-  image: string;
+  images: string[];
   sizeChart?: Record<string, Record<string, string>>;
 }
 
@@ -95,7 +95,7 @@ const Index = () => {
         name: scrapedData.name,
         price: scrapedData.price,
         sizes: scrapedData.sizes,
-        image: scrapedData.images?.[0] || "/placeholder.svg",
+        images: scrapedData.images || ["/placeholder.svg"], // Ensure images is an array
         sizeChart: scrapedData.sizeChart
       };
       
@@ -316,7 +316,7 @@ const Index = () => {
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-6">
-                            <img src={clothingData.image} alt={clothingData.name} className="w-full h-56 object-cover rounded-2xl bg-gray-100 shadow-lg border-4 border-blue-100" />
+                            <img src={clothingData.images[0]} alt={clothingData.name} className="w-full h-56 object-cover rounded-2xl bg-gray-100 shadow-lg border-4 border-blue-100" />
                             <div>
                               <h3 className="font-semibold text-xl text-blue-800">{clothingData.name}</h3>
                               <p className="text-2xl font-bold text-green-600">{clothingData.price}</p>

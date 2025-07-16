@@ -393,9 +393,9 @@ Respond in this exact JSON format:
     } else {
       console.log('No size chart data available, using fallback analysis');
       measurementComparison = "Size chart data not available for precise measurement comparison.";
-      fitDetails = `Unable to provide precise fit analysis due to missing size chart data.`;
-      sizeAdvice = `Consider checking the product's size chart or trying on the item.`;
-      recommendation = `Size ${userData.preferredSize} may work, but we recommend checking the size chart for accurate measurements.`;
+      fitDetails = `Unable to provide precise fit analysis due to missing size chart data. Based on your body type and the available sizes, we recommend trying on the item in person or checking customer reviews for fit feedback.`;
+      sizeAdvice = `Consider trying on the item in person or checking customer reviews for fit feedback.`;
+      recommendation = `Size ${userData.preferredSize} may work, but we recommend trying on the item in person for the best fit assessment.`;
       preciseFitScore = 50; // Neutral score when no data
     }
     

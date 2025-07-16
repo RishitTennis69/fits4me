@@ -53,7 +53,7 @@ serve(async (req) => {
                 brand: { type: 'string', description: 'Brand name' },
                 sizeChart: {
                   type: 'object',
-                  description: 'Detailed size chart with measurements for each available size. Extract ALL available sizes (XS, S, M, L, XL, XXL, etc.) and ALL measurements (chest, waist, hips, length, shoulders, sleeves, inseam, etc.)',
+                  description: 'COMPREHENSIVE size chart with measurements for EVERY available size. Extract ALL sizes (XS, S, M, L, XL, XXL, XXXL, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, etc.) and ALL measurements (chest, waist, hips, length, shoulders, sleeves, inseam, neck, armhole, bicep, thigh, knee, ankle, etc.). This is CRITICAL for accurate fit analysis.',
                   additionalProperties: {
                     type: 'object',
                     properties: {
@@ -69,7 +69,13 @@ serve(async (req) => {
                       bicep: { type: 'string', description: 'Bicep circumference in inches' },
                       thigh: { type: 'string', description: 'Thigh circumference in inches' },
                       knee: { type: 'string', description: 'Knee circumference in inches' },
-                      ankle: { type: 'string', description: 'Ankle circumference in inches' }
+                      ankle: { type: 'string', description: 'Ankle circumference in inches' },
+                      bust: { type: 'string', description: 'Bust measurement in inches' },
+                      natural_waist: { type: 'string', description: 'Natural waist measurement in inches' },
+                      low_waist: { type: 'string', description: 'Low waist measurement in inches' },
+                      rise: { type: 'string', description: 'Rise measurement in inches' },
+                      outseam: { type: 'string', description: 'Outseam measurement in inches' },
+                      cuff: { type: 'string', description: 'Cuff measurement in inches' }
                     }
                   }
                 },
@@ -179,18 +185,71 @@ serve(async (req) => {
         
         // Enhanced size chart extraction from HTML
         const sizeChart: any = {};
-        const sizeMatches = html.match(/(?:size|Size)\s*[:\-]?\s*(XS|S|M|L|XL|XXL|XXXL)/gi);
-        const availableSizes = sizeMatches ? [...new Set(sizeMatches.map(s => s.toUpperCase()))] : ['S', 'M', 'L', 'XL'];
         
-        // Try to extract measurements from size charts in HTML
-        const measurementPatterns = [
-          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:chest|bust)/gi,
-          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:waist)/gi,
-          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:hip|hips)/gi,
-          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:length)/gi,
-          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:shoulder|shoulders)/gi,
-          /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:sleeve|sleeves)/gi
+        // Extract all possible sizes from HTML
+        const sizePatterns = [
+          /(?:size|Size)\s*[:\-]?\s*(XS|S|M|L|XL|XXL|XXXL)/gi,
+          /(?:size|Size)\s*[:\-]?\s*(\d+)/gi,
+          /(?:size|Size)\s*[:\-]?\s*(\d+[-\/]\d+)/gi
         ];
+        
+        let allSizes: string[] = [];
+        sizePatterns.forEach(pattern => {
+          const matches = html.match(pattern);
+          if (matches) {
+            allSizes.push(...matches.map(s => s.toUpperCase()));
+          }
+        });
+        
+        // Remove duplicates and sort
+        allSizes = [...new Set(allSizes)].sort();
+        console.log('Extracted sizes from HTML:', allSizes);
+        
+        // Try to extract measurements for each size
+        allSizes.forEach(size => {
+          sizeChart[size] = {};
+          
+          // Look for size-specific measurement patterns
+          const sizeSection = html.match(new RegExp(`${size}[^>]*?>(.*?)(?=<tr|<td|</table|</div)`, 'gis'));
+          if (sizeSection) {
+            const sectionText = sizeSection[1];
+            
+            // Extract measurements from this size section
+            const measurementPatterns = [
+              { key: 'chest', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:chest|bust)/gi },
+              { key: 'waist', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:waist)/gi },
+              { key: 'hips', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:hip|hips)/gi },
+              { key: 'length', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:length)/gi },
+              { key: 'shoulders', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:shoulder|shoulders)/gi },
+              { key: 'sleeves', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:sleeve|sleeves)/gi },
+              { key: 'inseam', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:inseam)/gi },
+              { key: 'neck', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:neck)/gi },
+              { key: 'armhole', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:armhole)/gi },
+              { key: 'bicep', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:bicep)/gi },
+              { key: 'thigh', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:thigh)/gi },
+              { key: 'knee', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:knee)/gi },
+              { key: 'ankle', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:ankle)/gi },
+              { key: 'bust', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:bust)/gi },
+              { key: 'natural_waist', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:natural\s*waist)/gi },
+              { key: 'low_waist', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:low\s*waist)/gi },
+              { key: 'rise', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:rise)/gi },
+              { key: 'outseam', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:outseam)/gi },
+              { key: 'cuff', pattern: /(\d+(?:\.\d+)?)\s*(?:inch|in|")\s*(?:cuff)/gi }
+            ];
+            
+            measurementPatterns.forEach(({ key, pattern }) => {
+              const match = sectionText.match(pattern);
+              if (match && match[1]) {
+                sizeChart[size][key] = match[1];
+              }
+            });
+          }
+        });
+        
+        // If no sizes found, use default sizes
+        const availableSizes = allSizes.length > 0 ? allSizes : ['S', 'M', 'L', 'XL'];
+        console.log('Final available sizes:', availableSizes);
+        console.log('Extracted size chart:', sizeChart);
         
         // Extract color information
         const colorMatch = html.match(/(?:color|colour|Color|Colour)\s*[:\-]?\s*([a-zA-Z\s]+)/i);
