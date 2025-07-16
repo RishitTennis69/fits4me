@@ -43,7 +43,7 @@ serve(async (req) => {
       };
     }
 
-    // 1. OpenAI GPT-4 Vision: Analyze the user's body from the photo
+    // 1. OpenAI GPT-4o: Analyze the user's body from the photo
     let bodyAssessment = '';
     let detailedMeasurements: any = null;
     let usedManualMeasurements = false;
@@ -54,7 +54,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4-vision-preview',
+        model: 'gpt-4o',
         max_tokens: 1500,
         messages: [
           {
@@ -1359,7 +1359,7 @@ Respond in this exact JSON format:
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'gpt-4-vision-preview',
+              model: 'gpt-4o',
               max_tokens: 600,
               messages: [
                 {
