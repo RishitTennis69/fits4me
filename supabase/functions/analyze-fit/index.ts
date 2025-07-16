@@ -17,11 +17,8 @@ serve(async (req) => {
   try {
     const { userPhoto, clothingData, userData } = await req.json();
     // @ts-ignore Deno types for VSCode/TypeScript
-    const claudeApiKey = Deno.env.get('CLAUDE_API_KEY');
-    // @ts-ignore Deno types for VSCode/TypeScript
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
 
-    if (!claudeApiKey) throw new Error('Claude API key not configured');
     if (!openaiApiKey) throw new Error('OpenAI API key not configured');
 
     console.log('Analyzing fit for user:', userData);
@@ -31,50 +28,32 @@ serve(async (req) => {
     if (userPhoto.startsWith('data:image')) {
       // It's already a base64 image
       imageContent = {
-        type: 'image',
-        source: {
-          type: 'base64',
-          media_type: userPhoto.split(';')[0].split(':')[1],
-          data: userPhoto.split(',')[1]
+        type: 'image_url',
+        image_url: {
+          url: userPhoto
         }
       };
     } else {
-      // It's a URL, try to convert to base64
-      try {
-        const imageResponse = await fetch(userPhoto);
-        if (!imageResponse.ok) {
-          throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+      // It's a URL
+      imageContent = {
+        type: 'image_url',
+        image_url: {
+          url: userPhoto
         }
-        const imageBuffer = await imageResponse.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
-        const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
-        
-        imageContent = {
-          type: 'image',
-          source: {
-            type: 'base64',
-            media_type: contentType,
-            data: base64
-          }
-        };
-      } catch (imageError) {
-        console.error('Failed to convert image to base64:', imageError);
-        throw new Error(`Failed to process image: ${imageError.message}`);
-      }
+      };
     }
 
-    // 1. Claude 4 Sonnet: Analyze the user's body from the photo
+    // 1. OpenAI GPT-4 Vision: Analyze the user's body from the photo
     let bodyAssessment = '';
     let usedManualMeasurements = false;
-    const bodyAnalysisResponse = await fetch('https://api.anthropic.com/v1/messages', {
+    const bodyAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': claudeApiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'gpt-4-vision-preview',
         max_tokens: 1000,
         messages: [
           {
@@ -93,19 +72,19 @@ serve(async (req) => {
 
     if (!bodyAnalysisResponse.ok) {
       const errorText = await bodyAnalysisResponse.text();
-      console.error('Claude API error details:', errorText);
-      throw new Error(`Claude API error: ${bodyAnalysisResponse.status} - ${errorText}`);
+      console.error('OpenAI API error details:', errorText);
+      throw new Error(`OpenAI API error: ${bodyAnalysisResponse.status} - ${errorText}`);
     }
 
     const bodyAnalysis = await bodyAnalysisResponse.json();
-    console.log('Full Claude body analysis response:', JSON.stringify(bodyAnalysis, null, 2));
+    console.log('Full OpenAI body analysis response:', JSON.stringify(bodyAnalysis, null, 2));
     bodyAssessment = bodyAnalysis.choices?.[0]?.message?.content || '';
 
-    // Fallback: If Claude refuses or fails to analyze the body, use only manual measurements
+    // Fallback: If OpenAI refuses or fails to analyze the body, use only manual measurements
     if (!bodyAssessment || /not able to analyze|cannot analyze|refuse|privacy protection|error|unavailable/i.test(bodyAssessment)) {
       usedManualMeasurements = true;
       bodyAssessment = `Manual fallback: User-provided measurements only. Height: ${userData.height}in, Weight: ${userData.weight}lbs, Preferred Size: ${userData.preferredSize}.`;
-      console.warn('Claude refused or failed body analysis. Using manual measurements only.');
+      console.warn('OpenAI refused or failed body analysis. Using manual measurements only.');
     }
 
     // BULLETPROOF BODY ASSESSMENT: Ensure we always have a valid body assessment
@@ -117,26 +96,20 @@ serve(async (req) => {
 
     console.log('Body analysis:', bodyAssessment);
 
-    // 2. Claude 4 Sonnet: Fit analysis
-    const fitAnalysisResponse = await fetch('https://api.anthropic.com/v1/messages', {
+    // 2. OpenAI GPT-4: Fit analysis
+    const fitAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': claudeApiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'gpt-4',
         max_tokens: 1500,
         messages: [
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `CLOTHING ITEM:\nName: ${clothingData.name}\nBrand: ${clothingData.brand || 'N/A'}\nAvailable Sizes: ${clothingData.sizes?.join(', ')}\nSize Chart: ${JSON.stringify(clothingData.sizeChart)}\nDescription: ${clothingData.description}\nMaterial: ${clothingData.material}\n\nUSER BODY ANALYSIS:\n${bodyAssessment}\n\nUSER MEASUREMENTS:\nHeight: ${userData.height}in\nWeight: ${userData.weight}lbs\nPreferred Size: ${userData.preferredSize}\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks. If you cannot provide a fit analysis, respond with a clear message explaining why.\n\nPlease provide:\n1. Fit Score (0-100) for the preferred size ${userData.preferredSize} (fitScore must be a number between 0 and 100, never a string, null, or N/A)\n2. Detailed fit recommendation\n3. Alternative size suggestions if needed (e.g., would XS or M be better?)\n4. Brand comparison: If you have size charts for other brands, compare how this size would fit in those brands (e.g., “Nike S is smaller than Adidas S”). If no data, say so.\n5. Specific advice about how this item will fit (loose, tight, perfect, etc.)\n\nRespond in JSON format ONLY:\n{\n  "fitScore": number,\n  "recommendation": "string",\n  "sizeAdvice": "string",\n  "alternativeSize": "string or null",\n  "fitDetails": "string",\n  "brandComparison": "string"\n}`
-              }
-            ]
+            content: `CLOTHING ITEM:\nName: ${clothingData.name}\nBrand: ${clothingData.brand || 'N/A'}\nAvailable Sizes: ${clothingData.sizes?.join(', ')}\nSize Chart: ${JSON.stringify(clothingData.sizeChart)}\nDescription: ${clothingData.description}\nMaterial: ${clothingData.material}\n\nUSER BODY ANALYSIS:\n${bodyAssessment}\n\nUSER MEASUREMENTS:\nHeight: ${userData.height}in\nWeight: ${userData.weight}lbs\nPreferred Size: ${userData.preferredSize}\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks. If you cannot provide a fit analysis, respond with a clear message explaining why.\n\nPlease provide:\n1. Fit Score (0-100) for the preferred size ${userData.preferredSize} (fitScore must be a number between 0 and 100, never a string, null, or N/A)\n2. Detailed fit recommendation\n3. Alternative size suggestions if needed (e.g., would XS or M be better?)\n4. Brand comparison: If you have size charts for other brands, compare how this size would fit in those brands (e.g., "Nike S is smaller than Adidas S"). If no data, say so.\n5. Specific advice about how this item will fit (loose, tight, perfect, etc.)\n\nRespond in JSON format ONLY:\n{\n  "fitScore": number,\n  "recommendation": "string",\n  "sizeAdvice": "string",\n  "alternativeSize": "string or null",\n  "fitDetails": "string",\n  "brandComparison": "string"\n}`
           }
         ]
       }),
@@ -144,23 +117,19 @@ serve(async (req) => {
 
     if (!fitAnalysisResponse.ok) {
       const errorText = await fitAnalysisResponse.text();
-      console.error('Claude fit analysis error details:', errorText);
-      throw new Error(`Claude fit analysis error: ${fitAnalysisResponse.status} - ${errorText}`);
+      console.error('OpenAI fit analysis error details:', errorText);
+      throw new Error(`OpenAI fit analysis error: ${fitAnalysisResponse.status} - ${errorText}`);
     }
 
     const fitAnalysis = await fitAnalysisResponse.json();
-    console.log('Full Claude fit analysis response:', JSON.stringify(fitAnalysis, null, 2));
+    console.log('Full OpenAI fit analysis response:', JSON.stringify(fitAnalysis, null, 2));
     
     let analysisResult;
     let aiMessage = '';
 
     let content = fitAnalysis.choices?.[0]?.message?.content;
-    // If content is an array (Claude sometimes returns [{type: 'text', text: ...}]), extract the text
-    if (Array.isArray(content) && content[0]?.text) {
-      content = content[0].text;
-    }
     if (!content) {
-      console.error('Claude fit analysis response content is undefined. Full response:', JSON.stringify(fitAnalysis, null, 2));
+      console.error('OpenAI fit analysis response content is undefined. Full response:', JSON.stringify(fitAnalysis, null, 2));
       aiMessage = 'AI fit analysis is not available at this time.';
       analysisResult = null;
     } else {
@@ -191,7 +160,7 @@ serve(async (req) => {
         if (typeof analysisResult === 'string') {
           try {
             analysisResult = JSON.parse(analysisResult);
-            console.log('Parsed double-encoded JSON from Claude.');
+            console.log('Parsed double-encoded JSON from OpenAI.');
           } catch (e) {
             aiMessage = 'AI fit analysis returned invalid JSON.';
             analysisResult = null;
@@ -1313,24 +1282,21 @@ serve(async (req) => {
       try {
         const clothingImageContent = clothingData.image.startsWith('data:image')
           ? {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: clothingData.image.split(';')[0].split(':')[1],
-                data: clothingData.image.split(',')[1]
+              type: 'image_url',
+              image_url: {
+                url: clothingData.image
               }
             }
           : null;
         if (clothingImageContent) {
-          const clothingDescResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          const clothingDescResponse = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'x-api-key': claudeApiKey,
-              'anthropic-version': '2023-06-01',
-              'content-type': 'application/json',
+              'Authorization': `Bearer ${openaiApiKey}`,
+              'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'claude-sonnet-4-20250514',
+              model: 'gpt-4-vision-preview',
               max_tokens: 600,
               messages: [
                 {
