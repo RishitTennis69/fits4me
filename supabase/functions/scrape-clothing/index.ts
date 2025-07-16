@@ -16,68 +16,95 @@ serve(async (req) => {
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
 
     console.log('Scraping clothing URL:', url);
+    console.log('Firecrawl API key available:', !!firecrawlApiKey);
 
     let clothingData;
 
     if (firecrawlApiKey) {
       // Use Firecrawl if API key is available
       try {
+        console.log('Attempting Firecrawl API call...');
+        
+        const firecrawlPayload = {
+          url: url,
+          formats: ['extract'],
+          extract: {
+            schema: {
+              type: 'object',
+              properties: {
+                name: { type: 'string', description: 'Product name or title' },
+                price: { type: 'string', description: 'Product price in any format' },
+                sizes: { 
+                  type: 'array', 
+                  items: { type: 'string' },
+                  description: 'Available sizes (XS, S, M, L, XL, etc.)'
+                },
+                images: { 
+                  type: 'array', 
+                  items: { type: 'string' },
+                  description: 'Product image URLs'
+                },
+                description: { type: 'string', description: 'Product description' },
+                material: { type: 'string', description: 'Material/fabric information' },
+                brand: { type: 'string', description: 'Brand name' }
+              },
+              required: ['name']
+            }
+          }
+        };
+
+        console.log('Firecrawl payload:', JSON.stringify(firecrawlPayload, null, 2));
+
         const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${firecrawlApiKey}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            url: url,
-            formats: ['extract'],
-            extract: {
-              schema: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string', description: 'Product name' },
-                  price: { type: 'string', description: 'Product price' },
-                  sizes: { 
-                    type: 'array', 
-                    items: { type: 'string' },
-                    description: 'Available sizes'
-                  },
-                  images: { 
-                    type: 'array', 
-                    items: { type: 'string' },
-                    description: 'Product image URLs'
-                  },
-                  description: { type: 'string', description: 'Product description' },
-                  material: { type: 'string', description: 'Material/fabric information' }
-                }
-              }
-            }
-          }),
+          body: JSON.stringify(firecrawlPayload),
         });
 
+        console.log('Firecrawl response status:', response.status);
+        console.log('Firecrawl response headers:', Object.fromEntries(response.headers.entries()));
+
         if (!response.ok) {
-          throw new Error(`Firecrawl API error: ${response.status}`);
+          const errorText = await response.text();
+          console.error('Firecrawl API error response:', errorText);
+          throw new Error(`Firecrawl API error: ${response.status} - ${errorText}`);
         }
 
         const scrapedData = await response.json();
-        console.log('Scraped data:', scrapedData);
+        console.log('Firecrawl raw response:', JSON.stringify(scrapedData, null, 2));
 
-        // Extract structured data from Firecrawl v1 response
+        // Extract structured data from Firecrawl response
         const extractedData = scrapedData.data?.extract || {};
-        clothingData = {
-          name: extractedData.name || scrapedData.data?.metadata?.title || 'Unknown Item',
-          price: extractedData.price || 'Price not found',
-          sizes: extractedData.sizes || ['S', 'M', 'L', 'XL'],
-          images: extractedData.images || [scrapedData.data?.metadata?.ogImage] || [],
-          sizeChart: {},
-          description: extractedData.description || scrapedData.data?.metadata?.description || '',
-          material: extractedData.material || '',
-          scrapedContent: scrapedData.data?.markdown || ''
-        };
+        console.log('Extracted data from Firecrawl:', extractedData);
+
+        if (extractedData && Object.keys(extractedData).length > 0) {
+          clothingData = {
+            name: extractedData.name || scrapedData.data?.metadata?.title || 'Unknown Item',
+            price: extractedData.price || 'Price not found',
+            sizes: extractedData.sizes || ['S', 'M', 'L', 'XL'],
+            images: extractedData.images || [scrapedData.data?.metadata?.ogImage] || [],
+            sizeChart: {},
+            description: extractedData.description || scrapedData.data?.metadata?.description || '',
+            material: extractedData.material || '',
+            brand: extractedData.brand || '',
+            scrapedContent: scrapedData.data?.markdown || ''
+          };
+          
+          console.log('Successfully extracted clothing data from Firecrawl:', clothingData);
+        } else {
+          console.warn('Firecrawl returned empty extracted data, using fallback');
+          throw new Error('No extracted data from Firecrawl');
+        }
       } catch (firecrawlError) {
-        console.warn('Firecrawl failed, using fallback method:', firecrawlError.message);
+        console.error('Firecrawl failed with error:', firecrawlError.message);
+        console.error('Firecrawl error stack:', firecrawlError.stack);
         // Fall through to fallback method
       }
+    } else {
+      console.log('No Firecrawl API key provided, using fallback method');
     }
 
     // Fallback method if Firecrawl is not available or fails
@@ -97,6 +124,7 @@ serve(async (req) => {
         }
 
         const html = await response.text();
+        console.log('Fallback: Successfully fetched HTML, length:', html.length);
         
         // Basic extraction using regex patterns
         const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
@@ -113,8 +141,11 @@ serve(async (req) => {
           sizeChart: {},
           description: descriptionMatch?.[1] || 'No description available',
           material: 'Material information not available',
+          brand: '',
           scrapedContent: html.substring(0, 1000) // First 1000 chars for debugging
         };
+        
+        console.log('Fallback: Extracted clothing data:', clothingData);
       } catch (fallbackError) {
         console.error('Fallback scraping also failed:', fallbackError);
         // Return a basic structure if all methods fail
@@ -126,10 +157,13 @@ serve(async (req) => {
           sizeChart: {},
           description: 'Unable to scrape product information. Please try again or enter details manually.',
           material: 'Unknown',
+          brand: '',
           scrapedContent: ''
         };
       }
     }
+
+    console.log('Final clothing data being returned:', clothingData);
 
     return new Response(JSON.stringify({ 
       success: true, 
