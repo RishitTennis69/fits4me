@@ -2,16 +2,18 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://hnvktkqwbnmlztamotyo.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhudmt0a3F3Ym5tbHp0YW1vdHlvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5Mzk3ODEsImV4cCI6MjA2NzUxNTc4MX0.oPqLuwT1mjsGiNzZ_CI7vvO3IbtekKNZLYaxOslFQXE";
+// Supabase configuration - disconnected from previous project
+// These will need to be set with your new Supabase project credentials
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
-    persistSession: true,
     autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
   }
 });
