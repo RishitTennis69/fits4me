@@ -110,11 +110,7 @@ const Index = () => {
         title: "Clothing Analyzed",
         description: "Successfully extracted clothing data from the URL"
       });
-      // Show clothing preview immediately after scraping, before moving to step 2
-      // (step 1 card remains, but clothingData is set, so preview can be shown)
-      setTimeout(() => {
-        setCurrentStep(2);
-      }, 5000);
+      // Don't automatically advance to step 2 - let user select size first
     } catch (error) {
       setAnalyzeProgress(0);
       analyzeProgressRef.current = 0;
@@ -147,9 +143,9 @@ const Index = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         setUserData(prev => ({ ...prev, photo: e.target?.result as string }));
-        // Move to step 3 (measurements) after photo upload
+        // Move to step 2 (photo upload) after photo upload
         setTimeout(() => {
-          setCurrentStep(3); // This is step 3 in the UI
+          setCurrentStep(2); // This is now step 2 in the UI
         }, 1000);
       };
       reader.readAsDataURL(file);
@@ -194,7 +190,7 @@ const Index = () => {
         overlay: data.overlay || userData.photo // Use the generated overlay image
       });
       
-      setCurrentStep(4); // Move to results step
+      setCurrentStep(3); // Move to results step (now step 3)
       
       toast({
         title: "Analysis Complete",
@@ -238,7 +234,7 @@ const Index = () => {
         {/* Progress Steps */}
         <div className="flex justify-center mb-12">
           <div className="flex items-center space-x-6">
-            {[1, 2, 3, 4].map((step) => (
+            {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shadow-lg transition-colors duration-300 border-2 cursor-pointer ${
@@ -254,7 +250,7 @@ const Index = () => {
                 >
                   {step}
                 </div>
-                {step < 4 && (
+                {step < 3 && (
                   <div className={`w-16 h-1 mx-2 rounded-full transition-colors duration-300 ${
                     currentStep > step ? 'bg-gradient-to-r from-blue-400 to-purple-400' : 'bg-gray-200'
                   }`} />
@@ -268,12 +264,12 @@ const Index = () => {
         <div className="flex flex-col items-center justify-center min-h-[400px] mt-[-20px] w-full max-w-2xl">
           {currentStep === 1 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
-            {/* Step 1: Clothing URL */}
+            {/* Step 1: Clothing URL + Size Selection */}
               <Card className="glassmorphism-card p-10 text-lg">
               <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-blue-700">
                     <Link className="h-6 w-6 text-blue-500" />
-                  Step 1: Enter Clothing URL
+                  Step 1: Enter Clothing URL & Select Size
                 </CardTitle>
               </CardHeader>
                 <CardContent className="space-y-6">
@@ -304,9 +300,9 @@ const Index = () => {
                     </>
                   )}
                 </Button>
-                  {/* Show clothing preview after scraping, before moving to step 2 */}
+                  {/* Show clothing preview and size selection after scraping */}
                   {clothingData && !isAnalyzing && (
-                    <div className="mt-8 animate-fade-in-up">
+                    <div className="mt-8 animate-fade-in-up space-y-6">
                       <Card className="glassmorphism-card">
                         <CardHeader>
                           <CardTitle className="flex items-center gap-3 text-blue-700">
@@ -320,15 +316,40 @@ const Index = () => {
                             <div>
                               <h3 className="font-semibold text-xl text-blue-800">{clothingData.name}</h3>
                               <p className="text-2xl font-bold text-green-600">{clothingData.price}</p>
-                              <div className="flex gap-2 mt-3">
-                                {clothingData.sizes.map(size => (
-                                  <Badge key={size} variant="outline" className="text-sm px-3 py-1 rounded-full bg-white/70 border-blue-200 text-blue-700 font-semibold shadow-sm">
-                                    {size}
-                                  </Badge>
-                                ))}
-                              </div>
                             </div>
                           </div>
+                        </CardContent>
+                      </Card>
+                      
+                      {/* Size Selection */}
+                      <Card className="glassmorphism-card">
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-3 text-purple-700">
+                            <Shirt className="h-6 w-6 text-purple-500" />
+                            Select Your Preferred Size
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <p className="text-sm text-gray-600 mb-4">Choose your preferred size. Our AI will analyze your photo and compare your measurements with the product's size chart to give you the best fit recommendation.</p>
+                          <div className="flex gap-3 mt-3">
+                                {clothingData.sizes.map(size => (
+                              <Button
+                                key={size}
+                                variant={userData.preferredSize === size ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setUserData(prev => ({ ...prev, preferredSize: size }))}
+                                className={`rounded-full px-4 py-2 font-semibold transition-all duration-200 ${userData.preferredSize === size ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg scale-105' : 'bg-white/60 text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                              >
+                                {size}
+                              </Button>
+                            ))}
+                          </div>
+                          <Button 
+                            onClick={() => setCurrentStep(2)}
+                            className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300 mt-4"
+                          >
+                            Continue to Photo Upload
+                          </Button>
                         </CardContent>
                       </Card>
                     </div>
@@ -390,6 +411,23 @@ const Index = () => {
                       <div className="space-y-2 mt-4">
                         <img src={userData.photo} alt="Your photo" className="max-h-32 mx-auto rounded-xl shadow-lg border-4 border-green-200" />
                         <p className="text-base text-green-700 font-semibold">Photo uploaded!</p>
+                        <Button 
+                          onClick={handleAnalyze}
+                          disabled={isAnalyzing}
+                          className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300 mt-4"
+                        >
+                          {isAnalyzing ? (
+                            <>
+                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
+                              Analyzing Fit...
+                            </>
+                          ) : (
+                            <>
+                              <Shirt className="h-5 w-5 mr-2" />
+                              Analyze Fit
+                            </>
+                          )}
+                        </Button>
                       </div>
                     ) : (
                       <div className="space-y-2 mt-4">
@@ -404,55 +442,6 @@ const Index = () => {
             </div>
           )}
           {currentStep === 3 && (
-            <div className="w-full max-w-2xl animate-fade-in-up">
-            {/* Step 3: Preferred Size Selection */}
-              <Card className="glassmorphism-card p-10 text-lg">
-              <CardHeader>
-                  <CardTitle className="flex items-center gap-3 text-purple-700">
-                    <Shirt className="h-6 w-6 text-purple-500" />
-                  Step 3: Select Your Preferred Size
-                </CardTitle>
-              </CardHeader>
-                <CardContent className="space-y-8">
-                <div>
-                    <Label className="text-base">Preferred Size</Label>
-                    <p className="text-sm text-gray-600 mb-4">Choose your preferred size. Our AI will analyze your photo and compare your measurements with the product's size chart to give you the best fit recommendation.</p>
-                    <div className="flex gap-3 mt-3">
-                    {clothingData?.sizes.map(size => (
-                      <Button
-                        key={size}
-                        variant={userData.preferredSize === size ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setUserData(prev => ({ ...prev, preferredSize: size }))}
-                          className={`rounded-full px-4 py-2 font-semibold transition-all duration-200 ${userData.preferredSize === size ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg scale-105' : 'bg-white/60 text-blue-700 border-blue-200 hover:bg-blue-50'}`}
-                      >
-                        {size}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                <Button 
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing}
-                    className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300"
-                >
-                  {isAnalyzing ? (
-                    <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
-                      Analyzing Fit...
-                    </>
-                  ) : (
-                    <>
-                        <Shirt className="h-5 w-5 mr-2" />
-                      Analyze Fit
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-          )}
-          {currentStep === 4 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
               <Card className="glassmorphism-card p-10 text-lg">
                 <CardHeader>
