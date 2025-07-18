@@ -143,7 +143,7 @@ const Landing = () => {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 bg-clip-text text-transparent mb-4">
               Why Choose Fits4Me?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -201,7 +201,7 @@ const Landing = () => {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 bg-clip-text text-transparent mb-4">
               How It Works
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -244,19 +244,19 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-purple-100 via-blue-100 to-indigo-100">
+      <section className="py-20 bg-gradient-to-br from-purple-700 via-blue-700 to-indigo-800">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-6">
+          <h2 className="text-4xl font-bold text-white mb-6">
             Ready to Never Buy Ill-Fitting Clothes Again?
           </h2>
-          <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto">
             Join thousands of users who trust Fits4Me for accurate fit predictions and confident shopping.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               onClick={scrollToMain}
               size="lg"
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg px-8 py-3 rounded-xl"
+              className="bg-white text-purple-700 hover:bg-gray-100 text-lg px-8 py-3 rounded-xl font-semibold"
             >
               Try It Free
               <ArrowRight className="h-5 w-5 ml-2" />
@@ -265,7 +265,7 @@ const Landing = () => {
               variant="outline"
               size="lg"
               onClick={() => setIsSignUp(true)}
-              className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white text-lg px-8 py-3 rounded-xl"
+              className="border-white text-white hover:bg-white hover:text-purple-700 text-lg px-8 py-3 rounded-xl"
             >
               Create Account
             </Button>
