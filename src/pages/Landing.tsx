@@ -39,10 +39,14 @@ const Landing = () => {
 
     setIsLoading(true);
     try {
+      const redirectUrl = `${window.location.origin}/app`;
+      console.log('Current origin:', window.location.origin);
+      console.log('Redirect URL:', redirectUrl);
+      
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/app`
+          emailRedirectTo: redirectUrl
         }
       });
 
