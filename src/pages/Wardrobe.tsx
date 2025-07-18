@@ -148,50 +148,54 @@ const Wardrobe = () => {
     }
   };
 
-  const handleAddItem = async () => {
-    if (!newItemPhoto || !newItemData.name || !newItemData.category) {
+  // Combine analyze and add into one function
+  const handleAnalyzeAndAdd = async () => {
+    if (!newItemPhoto || !newItemData.size || !newItemData.sizeType) {
       toast({
         title: "Missing Information",
-        description: "Please provide a photo, name, and category for the item",
+        description: "Please provide a photo, size, and size type for the item",
         variant: "destructive"
       });
       return;
     }
-
+    setIsAnalyzing(true);
     try {
+      // Single call: analyze and add
       const { data, error } = await supabase.functions.invoke('wardrobe-management', {
         body: {
           action: 'add_item',
           itemData: {
-            ...newItemData,
+            size: newItemData.size,
+            sizeType: newItemData.sizeType,
             photoUrl: newItemPhoto,
             analyzeWithAI: true
           }
         }
       });
-
       if (error) throw error;
-
-      if (data.success) {
-        toast({
-          title: "Success",
-          description: "Item added to your wardrobe"
-        });
-        // Reset form
-        setNewItemPhoto('');
-        setNewItemData({ name: '', category: '', color: '', size: '', sizeType: '' });
-        setAiAnalysis(null);
-        setIsAddingItem(false);
-        // Only reload after modal is closed
-        setTimeout(() => loadWardrobeItems(), 100);
-      }
-    } catch (error) {
+      if (!data.success) throw new Error(data.error || 'Failed to add item to wardrobe');
+      toast({
+        title: "Success",
+        description: "Item added to your wardrobe"
+      });
+      // Reset form and close modal
+      setNewItemPhoto('');
+      setNewItemData({ name: '', category: '', color: '', size: '', sizeType: '' });
+      setAiAnalysis(null);
+      setIsAddingItem(false);
+      // Add the new item to the wardrobe list immediately
+      setWardrobeItems(prev => [data.item, ...prev]);
+      // Or, if you prefer, reload from backend:
+      // setTimeout(() => loadWardrobeItems(), 100);
+    } catch (error: any) {
       console.error('Error adding item:', error);
       toast({
         title: "Error",
-        description: "Failed to add item to wardrobe",
+        description: `Failed to add item: ${error.message || error}`,
         variant: "destructive"
       });
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -453,17 +457,17 @@ const Wardrobe = () => {
                     Cancel
                   </Button>
                   <Button
-                    onClick={handleAddItem}
-                    disabled={isAnalyzing}
+                    onClick={handleAnalyzeAndAdd}
+                    disabled={isAnalyzing || !newItemPhoto || !newItemData.size || !newItemData.sizeType}
                     className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
                   >
                     {isAnalyzing ? (
                       <>
                         <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                        Analyzing...
+                        Analyzing & Adding...
                       </>
                     ) : (
-                      'Add to Wardrobe'
+                      'Analyze & Add to Wardrobe'
                     )}
                   </Button>
                 </div>
