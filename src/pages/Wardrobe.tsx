@@ -31,7 +31,8 @@ const Wardrobe = () => {
     name: '',
     category: '',
     color: '',
-    size: ''
+    size: '',
+    sizeType: '' // New field for size type
   });
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -168,7 +169,7 @@ const Wardrobe = () => {
         
         // Reset form
         setNewItemPhoto('');
-        setNewItemData({ name: '', category: '', color: '', size: '' });
+        setNewItemData({ name: '', category: '', color: '', size: '', sizeType: '' });
         setAiAnalysis(null);
         setIsAddingItem(false);
         setShouldReloadWardrobe(true);
@@ -422,6 +423,20 @@ const Wardrobe = () => {
                         placeholder="e.g., M"
                       />
                     </div>
+                  </div>
+                  <div className="mt-4">
+                    <Label htmlFor="sizeType">Size Type</Label>
+                    <select
+                      id="sizeType"
+                      value={newItemData.sizeType}
+                      onChange={(e) => setNewItemData(prev => ({ ...prev, sizeType: e.target.value }))}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="">Select size type</option>
+                      <option value="youth">Youth</option>
+                      <option value="men">Men's</option>
+                      <option value="women">Women's</option>
+                    </select>
                   </div>
                 </div>
 
