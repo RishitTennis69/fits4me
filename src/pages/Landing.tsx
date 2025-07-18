@@ -244,7 +244,7 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-purple-400 via-blue-500 to-blue-600">
+      <section className="py-20 bg-gradient-to-br from-purple-300 via-blue-400 to-blue-500">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-white mb-8">
             Ready to Never Buy Ill-Fitting Clothes Again?
