@@ -542,6 +542,7 @@ const Index = () => {
                         <div className="font-semibold text-red-700">Poor fit</div>
                       </div>
                     </div>
+                  </div>
                   <Separator className="my-6" />
                   {/* Virtual Overlay */}
                   <div className="space-y-3">
