@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { HandGestureIcon } from '@/components/ui/hand-gesture-icon';
+import { ShirtChainIcon } from '@/components/ui/shirt-chain-icon';
 import { 
   Shirt, 
   Camera, 
@@ -82,7 +82,7 @@ const Landing = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
-              <HandGestureIcon className="h-8 w-8 text-purple-600 mr-3" />
+              <ShirtChainIcon className="h-8 w-8 text-purple-600 mr-3" />
               <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">
                 Fits4Me
               </span>
@@ -119,7 +119,7 @@ const Landing = () => {
         <div className="relative container mx-auto px-4 py-20">
           <div className="text-center max-w-4xl mx-auto pt-20">
             <div className="flex items-center justify-center mb-6">
-              <HandGestureIcon className="h-8 w-8 text-purple-600 mr-3" />
+              <ShirtChainIcon className="h-8 w-8 text-purple-600 mr-3" />
               <span className="text-gray-800 font-semibold">AI-Powered Recommendations</span>
             </div>
             <h1 className="text-6xl md:text-7xl font-bold leading-tight bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-6">
@@ -147,7 +147,7 @@ const Landing = () => {
       </section>
 
       {/* Core Features */}
-      <section className="py-20" style={{ backgroundColor: '#FAF9F6' }}>
+      <section className="py-20" style={{ backgroundColor: '#FEFEFE' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
