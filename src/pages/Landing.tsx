@@ -198,7 +198,7 @@ const Landing = () => {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-blue-50">
+      <section className="py-20" style={{ backgroundColor: '#f8f8ff' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-500 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
