@@ -82,7 +82,6 @@ const Landing = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
-              <TShirtIcon className="h-8 w-8 text-purple-600 mr-3" />
               <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">
                 Fits4Me
               </span>
@@ -118,12 +117,6 @@ const Landing = () => {
       <section className="relative overflow-hidden bg-white">
         <div className="relative container mx-auto px-4 py-20">
           <div className="text-center max-w-4xl mx-auto pt-20">
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center mr-3">
-                <TShirtIcon className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-gray-800 font-semibold">AI-Powered Recommendations</span>
-            </div>
             <h1 className="text-6xl md:text-7xl font-bold leading-tight bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-6">
               Fits4Me
             </h1>

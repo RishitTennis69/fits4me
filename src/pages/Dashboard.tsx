@@ -130,13 +130,38 @@ const Dashboard = () => {
 
   useEffect(() => {
     const checkUser = async () => {
+      // First, check if there's a session in the URL (magic link)
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        setUser(session.user);
+        // For now, use mock data. In production, fetch from database
+        setFitAnalyses(mockAnalyses);
+        setIsLoading(false);
+        return;
+      }
+
+      // If no session, set up auth state listener
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          setUser(session.user);
+          setFitAnalyses(mockAnalyses);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setFitAnalyses([]);
+        }
+        setIsLoading(false);
+      });
+
+      // Also try to get current user as fallback
       const { data: { user }, error } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        // For now, use mock data. In production, fetch from database
         setFitAnalyses(mockAnalyses);
       }
       setIsLoading(false);
+
+      return () => subscription.unsubscribe();
     };
     
     checkUser();
