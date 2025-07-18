@@ -111,7 +111,7 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
       photo_url: itemData.photoUrl,
       ai_analysis: aiAnalysis,
       ai_raw: aiRaw,
-      name: nameValue,
+      name: 'Unnamed Item',
       category: aiAnalysis?.category || null,
       color: aiAnalysis?.color || null,
       style: aiAnalysis?.style || null,
