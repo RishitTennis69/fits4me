@@ -81,14 +81,8 @@ const Landing = () => {
       <header className="absolute top-0 left-0 right-0 z-10">
         <div className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
-            <div className="flex items-center">
-              <span className="text-2xl font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 bg-clip-text text-transparent">
-                Fits4Me
-              </span>
-            </div>
-            
             {/* Auth Section */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 ml-auto">
               <Button 
                 onClick={() => {
                   setIsSignUp(false);
@@ -334,7 +328,7 @@ const Landing = () => {
       <section className="py-20 bg-gradient-to-br from-purple-300 via-blue-400 to-blue-500">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-white mb-8">
-            Ready to Never Buy Ill-Fitting Clothes Again?
+            Ready to Never Buy Poor Fitting Clothes Again?
           </h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
