@@ -49,6 +49,33 @@ interface MultiItemAnalysis {
   outfitRecommendation: string;
 }
 
+interface AnalysisResult {
+  fitScore: number;
+  recommendation: string;
+  sizeAdvice: string;
+  overlay: string;
+  // Multi-item properties
+  overallFitScore?: number;
+  individualScores?: {
+    itemId: string;
+    itemName: string;
+    selectedSize: string;
+    fitScore: number;
+    recommendation: string;
+    sizeAdvice: string;
+    alternativeSize?: string;
+    fitDetails: string;
+    measurementComparison: string;
+  }[];
+  outfitRecommendation?: string;
+  outfitCompatibility?: {
+    colorHarmony: number;
+    styleCohesion: number;
+    overallRating: string;
+  };
+  combinedOverlay?: string;
+}
+
 const Index = () => {
   const { toast } = useToast();
   const [clothingUrl, setClothingUrl] = useState('');
@@ -67,12 +94,7 @@ const Index = () => {
     inches: 7 // Default 7 inches (5'7")
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<{
-    fitScore: number;
-    recommendation: string;
-    sizeAdvice: string;
-    overlay: string;
-  } | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [analyzeProgress, setAnalyzeProgress] = useState(0);
   const analyzeProgressRef = React.useRef<number>(0);
@@ -752,38 +774,72 @@ const Index = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-8">
-                  {/* Fit Score */}
-                  <div className="text-center">
-                    <div className="text-4xl font-extrabold text-green-600 mb-2 drop-shadow-lg">
-                      {analysisResult?.fitScore || 75}%
-                    </div>
-                    <p className="text-base text-gray-600">Fit Score</p>
-                    <Progress value={analysisResult?.fitScore || 75} className="mt-3 h-5" />
-                    {/* Detailed Score Breakdown */}
-                    <div className="mt-4 grid grid-cols-2 gap-4">
-                      <div className="bg-gray-100 p-2 rounded-lg">
-                        <div className="font-semibold text-green-700">Perfect fit</div>
-                      </div>
-                      <div className="bg-gray-100 p-2 rounded-lg">
-                        <div className="font-semibold text-blue-700">Good fit potential</div>
-                        </div>
-                      <div className="bg-gray-100 p-2 rounded-lg">
-                        <div className="font-semibold text-yellow-700">Moderate fit</div>
-                        </div>
-                      <div className="bg-gray-100 p-2 rounded-lg">
-                        <div className="font-semibold text-red-700">Poor fit</div>
-                      </div>
-                    </div>
-                  </div>
-                  <Separator className="my-6 bg-gray-200" />
-                  {/* AI-Powered Fit Score Guide */}
+                  {/* Fit Score Display */}
                   <div className="space-y-4">
-                    <h4 className="font-semibold text-lg text-blue-600">AI Fit Analysis Guide</h4>
-                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
-                      <p className="text-sm text-blue-700 mb-3">
-                        <strong>Your Score: {analysisResult?.fitScore || 75}%</strong> - Here's what this means for your specific body type and this clothing item:
-                      </p>
+                    <h4 className="font-semibold text-lg text-blue-600">Outfit Analysis Results</h4>
+                    
+                    {/* Overall Fit Score */}
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 rounded-2xl text-white shadow-xl">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-2xl font-bold">Overall Fit Score</h3>
+                        <div className="text-right">
+                          <div className="text-4xl font-bold">{analysisResult?.fitScore || 75}%</div>
+                          <div className="text-sm opacity-90">Outfit Rating</div>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Individual Items</span>
+                          <span>{selectedItems.length} items analyzed</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Outfit Compatibility</span>
+                          <span>{analysisResult?.outfitCompatibility?.overallRating || 'Good'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Individual Item Scores */}
+                    {selectedItems.length > 1 && (
                       <div className="space-y-3">
+                        <h5 className="font-semibold text-gray-700">Individual Item Scores</h5>
+                        {selectedItems.map((item, index) => {
+                          const itemScore = analysisResult?.individualScores?.find(score => score.itemId === item.id)?.fitScore || 75;
+                          return (
+                            <div key={item.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                  <img src={item.images[0]} alt={item.name} className="w-12 h-12 object-cover rounded-lg" />
+                                  <div>
+                                    <p className="font-semibold text-gray-900">{item.name}</p>
+                                    <p className="text-sm text-gray-500">Size {item.selectedSize}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-xl font-bold text-blue-600">{itemScore}%</div>
+                                  <div className="text-xs text-gray-500">Fit Score</div>
+                                </div>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className={`h-2 rounded-full transition-all duration-500 ${
+                                    itemScore >= 80 ? 'bg-green-500' : 
+                                    itemScore >= 70 ? 'bg-blue-500' : 
+                                    itemScore >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                                  }`}
+                                  style={{ width: `${itemScore}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    {/* Fit Score Guide */}
+                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                      <h5 className="font-semibold text-gray-700 mb-3">Fit Score Guide</h5>
+                      <div className="space-y-2">
                         {(() => {
                           const score = analysisResult?.fitScore || 75;
                           if (score >= 90) {
@@ -791,11 +847,11 @@ const Index = () => {
                               <div className="bg-green-100 p-3 rounded-lg border border-green-200">
                                 <div className="flex items-center gap-2 mb-2">
                                   <CheckCircle className="h-5 w-5 text-green-600" />
-                                  <span className="font-bold text-green-800">90-100%: Exceptional Fit</span>
+                                  <span className="font-bold text-green-800">90-100%: Perfect Outfit</span>
                                 </div>
                                 <p className="text-sm text-green-700">
-                                  This item is <strong>tailored almost perfectly</strong> for your body proportions. The AI analysis shows this size will fit you like it was custom-made. 
-                                  <strong>Buy with absolute confidence</strong> - this is the ideal fit for your body type.
+                                  This outfit will fit you <strong>perfectly</strong>. All items work together excellently and match your body proportions. 
+                                  <strong>Definitely buy this outfit</strong> - you'll look amazing!
                                 </p>
                               </div>
                             );
@@ -804,11 +860,11 @@ const Index = () => {
                               <div className="bg-blue-100 p-3 rounded-lg border border-blue-200">
                                 <div className="flex items-center gap-2 mb-2">
                                   <CheckCircle className="h-5 w-5 text-blue-600" />
-                                  <span className="font-bold text-blue-800">80-89%: Excellent Fit</span>
+                                  <span className="font-bold text-blue-800">80-89%: Excellent Outfit</span>
                                 </div>
                                 <p className="text-sm text-blue-700">
-                                  This item will fit you <strong>very well</strong>. The AI analysis indicates this size matches your body proportions excellently. 
-                                  <strong>Highly recommended to buy</strong> - you'll likely be very satisfied with the fit.
+                                  This outfit will fit you <strong>very well</strong>. All items complement each other and should fit excellently. 
+                                  <strong>Highly recommended to buy</strong> - you'll likely be very satisfied with the complete look.
                                 </p>
                               </div>
                             );
@@ -817,11 +873,11 @@ const Index = () => {
                               <div className="bg-yellow-100 p-3 rounded-lg border border-yellow-200">
                                 <div className="flex items-center gap-2 mb-2">
                                   <AlertCircle className="h-5 w-5 text-yellow-600" />
-                                  <span className="font-bold text-yellow-800">70-79%: Good Fit</span>
+                                  <span className="font-bold text-yellow-800">70-79%: Good Outfit</span>
                                 </div>
                                 <p className="text-sm text-yellow-700">
-                                  This item should fit you <strong>well</strong>. The AI analysis shows this size is suitable for your body type. 
-                                  <strong>Recommended to buy</strong>, but you might want to try it on first if possible.
+                                  This outfit should fit you <strong>well</strong>. Most items work together and are suitable for your body type. 
+                                  <strong>Recommended to buy</strong>, but you might want to try on first if possible.
                                 </p>
                               </div>
                             );
@@ -830,11 +886,11 @@ const Index = () => {
                               <div className="bg-orange-100 p-3 rounded-lg border border-orange-200">
                                 <div className="flex items-center gap-2 mb-2">
                                   <AlertCircle className="h-5 w-5 text-orange-600" />
-                                  <span className="font-bold text-orange-800">50-69%: Moderate Fit</span>
+                                  <span className="font-bold text-orange-800">50-69%: Moderate Outfit</span>
                                 </div>
                                 <p className="text-sm text-orange-700">
-                                  This item may fit you <strong>adequately</strong>. The AI analysis suggests this size might need some adjustments. 
-                                  <strong>Consider trying on first</strong> - the fit might be acceptable but not ideal.
+                                  This outfit may fit you <strong>adequately</strong>. Some items might need adjustments or don't work well together. 
+                                  <strong>Consider trying on first</strong> - the overall look might be acceptable but not ideal.
                                 </p>
                               </div>
                             );
@@ -843,11 +899,11 @@ const Index = () => {
                               <div className="bg-red-100 p-3 rounded-lg border border-red-200">
                                 <div className="flex items-center gap-2 mb-2">
                                   <X className="h-5 w-5 text-red-600" />
-                                  <span className="font-bold text-red-800">0-49%: Poor Fit</span>
+                                  <span className="font-bold text-red-800">0-49%: Poor Outfit</span>
                                 </div>
                                 <p className="text-sm text-red-700">
-                                  This item is <strong>not recommended</strong> for your body type. The AI analysis indicates this size doesn't match your proportions well. 
-                                  <strong>Don't buy this size</strong> - consider a different size or item entirely.
+                                  This outfit is <strong>not recommended</strong>. Multiple items don't fit well or don't work together. 
+                                  <strong>Don't buy this combination</strong> - consider different items or sizes for a better overall look.
                                 </p>
                               </div>
                             );
@@ -859,16 +915,18 @@ const Index = () => {
                   <Separator className="my-6 bg-gray-200" />
                   {/* Virtual Overlay */}
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-lg text-blue-600">Virtual Try-On</h4>
+                    <h4 className="font-semibold text-lg text-blue-600">
+                      {selectedItems.length > 1 ? 'Complete Outfit Try-On' : 'Virtual Try-On'}
+                    </h4>
                     <div className="relative bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 p-4 rounded-2xl border border-blue-400/30">
                       <img 
-                        src={analysisResult?.overlay || userData.photo} 
-                        alt="Virtual try-on" 
+                        src={selectedItems.length > 1 ? (analysisResult?.combinedOverlay || userData.photo) : (analysisResult?.overlay || userData.photo)} 
+                        alt={selectedItems.length > 1 ? "Complete outfit try-on" : "Virtual try-on"} 
                         className="w-full h-72 object-cover rounded-2xl shadow-lg border-4 border-blue-300"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl" />
                       <Badge className="absolute top-3 right-3 bg-green-600 text-white px-4 py-2 rounded-full shadow-lg text-base">
-                        Size {userData.preferredSize}
+                        {selectedItems.length > 1 ? `${selectedItems.length} Items` : `Size ${userData.preferredSize}`}
                       </Badge>
                     </div>
                   </div>
@@ -894,7 +952,7 @@ const Index = () => {
                               return <span className="font-bold text-red-700">Don't Buy</span>;
                             }
                           })()}
-                          {' - '}{analysisResult?.recommendation || 'Fit analysis completed successfully.'}
+                          {' - '}{selectedItems.length > 1 ? (analysisResult?.outfitRecommendation || 'Outfit analysis completed successfully.') : (analysisResult?.recommendation || 'Fit analysis completed successfully.')}
                         </p>
                       </div>
                     </div>
@@ -909,10 +967,16 @@ const Index = () => {
                       Return to Dashboard
                     </Button>
                     <Button 
-                      onClick={() => setCurrentStep(1)}
+                      onClick={() => {
+                        setCurrentStep(1);
+                        setSelectedItems([]);
+                        setIsMultiItemMode(false);
+                        setClothingData(null);
+                        setAnalysisResult(null);
+                      }}
                       className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-xl py-3"
                     >
-                      Analyze Another Item
+                      {selectedItems.length > 1 ? 'Create New Outfit' : 'Analyze Another Item'}
                     </Button>
                   </div>
                 </CardContent>
@@ -1032,10 +1096,10 @@ const Index = () => {
               {/* Fit Score */}
               <div className="text-center">
                 <div className="text-4xl font-extrabold text-green-600 mb-2 drop-shadow-lg">
-                  {analysisResult.fitScore}%
+                  {analysisResult.fitScore || 75}%
                 </div>
                 <p className="text-base text-gray-600">Fit Score</p>
-                <Progress value={analysisResult.fitScore} className="mt-3 h-5" />
+                <Progress value={analysisResult.fitScore || 75} className="mt-3 h-5" />
               </div>
               
               {/* Virtual Overlay */}
@@ -1062,7 +1126,7 @@ const Index = () => {
                     <p className="font-semibold text-green-700">AI Recommendation</p>
                     <p className="text-base text-green-600">
                       {(() => {
-                        const score = analysisResult.fitScore;
+                        const score = analysisResult.fitScore || 75;
                         if (score >= 90) {
                           return <span className="font-bold text-green-700">Definitely Buy</span>;
                         } else if (score >= 80) {
@@ -1086,11 +1150,11 @@ const Index = () => {
                 <h4 className="font-semibold text-lg text-blue-600">AI Fit Analysis Guide</h4>
                 <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
                   <p className="text-sm text-blue-700 mb-3">
-                    <strong>Your Score: {analysisResult.fitScore}%</strong> - Here's what this means for your specific body type and this clothing item:
+                    <strong>Your Score: {analysisResult.fitScore || 75}%</strong> - Here's what this means for your specific body type and this clothing item:
                   </p>
                   <div className="space-y-3">
                     {(() => {
-                      const score = analysisResult.fitScore;
+                      const score = analysisResult.fitScore || 75;
                       if (score >= 90) {
                         return (
                           <div className="bg-green-100 p-3 rounded-lg border border-green-200">
