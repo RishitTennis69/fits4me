@@ -69,61 +69,51 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-pink-900/20"></div>
-        <div className="relative container mx-auto px-4 py-20">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="flex items-center justify-center mb-6">
+      {/* Header with Auth */}
+      <header className="absolute top-0 left-0 right-0 z-10">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
               <Sparkles className="h-8 w-8 text-purple-400 mr-3" />
-              <span className="text-purple-400 font-semibold">AI-Powered Virtual Fitting</span>
+              <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent">
+                Fits4Me
+              </span>
             </div>
-            <h1 className="text-6xl md:text-7xl font-bold leading-tight bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent mb-6">
-              Fits4Me
-            </h1>
-            <p className="text-2xl md:text-3xl text-gray-300 mb-8 font-light">
-              Only Buy What Fits
-            </p>
-            <p className="text-lg text-gray-400 mb-12 max-w-2xl mx-auto">
-              Upload your photo, paste a clothing URL, and get instant AI-powered fit recommendations. 
-              Never buy clothes that don't fit again.
-            </p>
             
             {/* Auth Section */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 max-w-md mx-auto mb-12 border border-gray-700">
-              <h3 className="text-xl font-semibold text-white mb-4">
-                {isSignUp ? 'Create Account' : 'Sign In'}
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="email" className="text-gray-300">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mt-2 bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
-                  />
+            <div className="flex items-center gap-4">
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <Label htmlFor="email" className="text-white text-sm">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="mt-1 bg-gray-700 border-gray-600 text-white placeholder:text-gray-400 w-48"
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleAuth}
+                    disabled={isLoading}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-4 w-4 mr-2" />
+                        {isSignUp ? 'Sign Up' : 'Sign In'}
+                      </>
+                    )}
+                  </Button>
                 </div>
-                <Button 
-                  onClick={handleAuth}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-lg py-3"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-5 w-5 mr-2" />
-                      {isSignUp ? 'Sign Up' : 'Sign In'} with Magic Link
-                    </>
-                  )}
-                </Button>
-                <p className="text-sm text-gray-400 text-center">
+                <p className="text-xs text-gray-300 text-center mt-2">
                   {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
                   <button
                     onClick={() => setIsSignUp(!isSignUp)}
@@ -134,12 +124,35 @@ const Landing = () => {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-pink-900/20"></div>
+        <div className="relative container mx-auto px-4 py-20">
+          <div className="text-center max-w-4xl mx-auto pt-20">
+            <div className="flex items-center justify-center mb-6">
+              <Sparkles className="h-8 w-8 text-white mr-3" />
+              <span className="text-white font-semibold">AI-Powered Virtual Fitting</span>
+            </div>
+            <h1 className="text-6xl md:text-7xl font-bold leading-tight bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent mb-6">
+              Fits4Me
+            </h1>
+            <p className="text-2xl md:text-3xl text-white mb-8 font-light">
+              Only Buy What Fits
+            </p>
+            <p className="text-lg text-white mb-12 max-w-2xl mx-auto">
+              Upload your photo, paste a clothing URL, and get instant AI-powered fit recommendations. 
+              Never buy clothes that don't fit again.
+            </p>
 
             <Button 
               onClick={scrollToMain}
               variant="outline"
               size="lg"
-              className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-gray-900 text-lg px-8 py-3"
+              className="border-white text-white hover:bg-white hover:text-gray-900 text-lg px-8 py-3"
             >
               Try It Now
               <ArrowRight className="h-5 w-5 ml-2" />
