@@ -139,7 +139,7 @@ const Dashboard = () => {
       return;
     }
 
-    navigate('/app');
+    navigate('/');
   };
 
   const formatDate = (dateString: string) => {
@@ -184,13 +184,23 @@ const Dashboard = () => {
                 Fits4Me Dashboard
               </span>
             </div>
-            <Button 
-              onClick={handleCreateNew}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-2xl px-6 py-2 transition-all duration-300 hover:scale-105"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Create New Analysis
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button 
+                onClick={() => navigate('/wardrobe')}
+                variant="outline"
+                className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 rounded-2xl px-6 py-2 transition-all duration-300"
+              >
+                <Shirt className="h-5 w-5 mr-2" />
+                My Wardrobe
+              </Button>
+              <Button 
+                onClick={handleCreateNew}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-2xl px-6 py-2 transition-all duration-300 hover:scale-105"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Create New Analysis
+              </Button>
+            </div>
           </div>
         </div>
       </header>

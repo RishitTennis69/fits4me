@@ -84,6 +84,9 @@ const Index = () => {
   const [isMultiItemMode, setIsMultiItemMode] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [hasStoredPhoto, setHasStoredPhoto] = useState(false);
+  const [wardrobeItems, setWardrobeItems] = useState<any[]>([]);
+  const [showWardrobeModal, setShowWardrobeModal] = useState(false);
+  const [selectedWardrobeItem, setSelectedWardrobeItem] = useState<any>(null);
   // Store height in inches and weight in pounds
   const [userData, setUserData] = useState<UserData>({
     photo: '',
@@ -149,6 +152,9 @@ const Index = () => {
             setHasStoredPhoto(true);
             setUserData(prev => ({ ...prev, photo: profile.photo_url }));
           }
+          
+          // Load wardrobe items
+          loadWardrobeItems();
         } catch (error) {
           console.error('Error fetching user profile:', error);
         }
@@ -157,6 +163,22 @@ const Index = () => {
     
     checkUser();
   }, []);
+
+  const loadWardrobeItems = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('wardrobe-management', {
+        body: { action: 'get_items' }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setWardrobeItems(data.items);
+      }
+    } catch (error) {
+      console.error('Error loading wardrobe items:', error);
+    }
+  };
 
   const saveUserPhoto = async (photoUrl: string) => {
     if (!user) return;
@@ -418,7 +440,8 @@ const Index = () => {
           userPhoto: userData.photo,
           clothingItems: selectedItems, // Pass array of items
           userData: userData,
-          isMultiItem: true
+          isMultiItem: true,
+          wardrobeItem: selectedWardrobeItem // Pass selected wardrobe item
         }
       });
 
@@ -540,23 +563,34 @@ const Index = () => {
                       className="mt-2 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
                   />
                 </div>
-                <Button 
-                  onClick={handleUrlSubmit}
-                  disabled={isAnalyzing}
-                    className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300"
-                >
-                  {isAnalyzing ? (
-                    <>
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={handleUrlSubmit}
+                    disabled={isAnalyzing}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300"
+                  >
+                    {isAnalyzing ? (
+                      <>
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
                         <Zap className="h-5 w-5 mr-2" />
-                      Analyze Clothing
-                    </>
-                  )}
-                </Button>
+                        Add New Item
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    onClick={() => setShowWardrobeModal(true)}
+                    disabled={wardrobeItems.length === 0}
+                    variant="outline"
+                    className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50 text-lg py-3 rounded-xl shadow-lg transition-all duration-300"
+                  >
+                    <Shirt className="h-5 w-5 mr-2" />
+                    Add from Wardrobe
+                  </Button>
+                </div>
                 
                 {/* Quick Analyze for users with stored photos */}
                 {userData.photo && (
@@ -1247,6 +1281,139 @@ const Index = () => {
           </div>
         </div>
       )}
+      
+      {/* Wardrobe Selection Modal */}
+      {showWardrobeModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Select from Your Wardrobe</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowWardrobeModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </Button>
+            </div>
+            
+            {wardrobeItems.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="max-w-md mx-auto">
+                  <div className="bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                    <Shirt className="h-12 w-12 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Your wardrobe is empty</h3>
+                  <p className="text-gray-600 mb-6">
+                    Add your existing clothing items to try them on with new purchases
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setShowWardrobeModal(false);
+                      navigate('/wardrobe');
+                    }}
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                  >
+                    Go to My Wardrobe
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <p className="text-gray-600">
+                  Select an item from your wardrobe to try on with new clothing items.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {wardrobeItems.map((item) => (
+                    <Card 
+                      key={item.id} 
+                      className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                        selectedWardrobeItem?.id === item.id 
+                          ? 'ring-2 ring-blue-500 bg-blue-50' 
+                          : 'bg-white border-gray-200'
+                      }`}
+                      onClick={() => setSelectedWardrobeItem(item)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <img 
+                            src={item.photo_url} 
+                            alt={item.name} 
+                            className="w-full h-32 object-cover rounded-lg bg-gray-100" 
+                          />
+                          <div>
+                            <h4 className="font-semibold text-gray-900 text-sm line-clamp-2">
+                              {item.name}
+                            </h4>
+                            <div className="flex gap-1 mt-2 flex-wrap">
+                              <Badge className="text-xs bg-blue-100 text-blue-800">
+                                {item.category}
+                              </Badge>
+                              {item.color && (
+                                <Badge variant="outline" className="text-xs text-gray-600">
+                                  {item.color}
+                                </Badge>
+                              )}
+                              {item.size && (
+                                <Badge variant="outline" className="text-xs text-gray-600">
+                                  Size {item.size}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                
+                <div className="flex gap-3 pt-4">
+                  <Button 
+                    onClick={() => setShowWardrobeModal(false)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      if (selectedWardrobeItem) {
+                        // Convert wardrobe item to clothing data format
+                        const wardrobeClothingData: ClothingData = {
+                          id: selectedWardrobeItem.id,
+                          name: selectedWardrobeItem.name,
+                          price: 'Owned Item',
+                          sizes: [selectedWardrobeItem.size || 'M'],
+                          images: [selectedWardrobeItem.photo_url],
+                          sizeChart: {},
+                          selectedSize: selectedWardrobeItem.size || 'M'
+                        };
+                        
+                        setSelectedItems(prev => [...prev, wardrobeClothingData]);
+                        setIsMultiItemMode(true);
+                        setShowWardrobeModal(false);
+                        setSelectedWardrobeItem(null);
+                        
+                        toast({
+                          title: "Item Added",
+                          description: `"${selectedWardrobeItem.name}" added to your outfit from wardrobe.`
+                        });
+                      }
+                    }}
+                    disabled={!selectedWardrobeItem}
+                    className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+                  >
+                    Add Selected Item
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
       {/* Glassmorphism and animation styles: Move the following CSS to your global CSS file (e.g., index.css or globals.css)
         .glassmorphism-card {
           background: rgba(255,255,255,0.7);

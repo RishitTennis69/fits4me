@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userPhoto, clothingData, clothingItems, userData, isMultiItem } = await req.json();
+    const { userPhoto, clothingData, clothingItems, userData, isMultiItem, wardrobeItem } = await req.json();
     // @ts-ignore Deno types for VSCode/TypeScript
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
 
@@ -24,9 +24,34 @@ serve(async (req) => {
     console.log('Analyzing fit for user:', userData);
     console.log('Multi-item mode:', isMultiItem);
     console.log('Clothing items:', clothingItems);
+    console.log('Wardrobe item:', wardrobeItem);
 
-    // Handle both single item and multi-item modes
-    const itemsToAnalyze = isMultiItem ? clothingItems : [clothingData];
+    // Handle both single item and multi-item modes, including wardrobe items
+    let itemsToAnalyze: any[] = [];
+    if (isMultiItem) {
+      itemsToAnalyze = clothingItems || [];
+      // Add wardrobe item if provided
+      if (wardrobeItem) {
+        // Convert wardrobe item to clothing data format
+        const wardrobeClothingData = {
+          id: wardrobeItem.id,
+          name: wardrobeItem.name,
+          price: 'Owned Item',
+          sizes: [wardrobeItem.size || 'M'],
+          images: [wardrobeItem.photo_url],
+          sizeChart: {}, // No size chart for owned items
+          selectedSize: wardrobeItem.size || 'M',
+          description: wardrobeItem.ai_analysis?.description || wardrobeItem.name,
+          category: wardrobeItem.category,
+          color: wardrobeItem.color,
+          isWardrobeItem: true
+        };
+        itemsToAnalyze.push(wardrobeClothingData);
+      }
+    } else {
+      itemsToAnalyze = [clothingData];
+    }
+    
     console.log('Items to analyze:', itemsToAnalyze);
 
     // Check if userPhoto is base64 or URL and handle accordingly
