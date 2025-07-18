@@ -56,7 +56,7 @@ const Dashboard = () => {
         if (error.code !== 'PGRST116') { // PGRST116 is "not found" - normal for new users
           toast({
             title: "Error",
-            description: "Failed to load your fit analyses",
+            description: `Failed to load your fit analyses: ${error.message || error}`,
             variant: "destructive"
           });
         }
@@ -64,12 +64,12 @@ const Dashboard = () => {
       }
 
       setFitAnalyses(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching analyses:', error);
       // Only show error toast for actual errors, not when user has no analyses
       toast({
         title: "Error",
-        description: "Failed to load your fit analyses",
+        description: `Failed to load your fit analyses: ${error.message || error}`,
         variant: "destructive"
       });
     }
