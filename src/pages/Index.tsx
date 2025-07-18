@@ -312,10 +312,10 @@ const Index = () => {
 
       // Set the analysis results
       setAnalysisResult({
-        fitScore: analysisResult.fitScore || Math.floor(Math.random() * 40) + 60,
-        recommendation: analysisResult.recommendation || 'Fit analysis completed successfully.',
-        sizeAdvice: analysisResult.sizeAdvice || 'Size recommendation available.',
-        overlay: analysisResult.overlayImage || userData.photo
+        fitScore: analysisResult.analysis?.fitScore || Math.floor(Math.random() * 40) + 60,
+        recommendation: analysisResult.analysis?.recommendation || 'Fit analysis completed successfully.',
+        sizeAdvice: analysisResult.analysis?.sizeAdvice || 'Size recommendation available.',
+        overlay: analysisResult.overlay || userData.photo
       });
       
       // Show results in a popup/modal
@@ -384,10 +384,10 @@ const Index = () => {
 
       // Set the analysis results
       setAnalysisResult({
-        fitScore: analysisResult.fitScore || Math.floor(Math.random() * 40) + 60,
-        recommendation: analysisResult.recommendation || 'Fit analysis completed successfully.',
-        sizeAdvice: analysisResult.sizeAdvice || 'Size recommendation available.',
-        overlay: analysisResult.overlayImage || userData.photo
+        fitScore: analysisResult.analysis?.fitScore || Math.floor(Math.random() * 40) + 60,
+        recommendation: analysisResult.analysis?.recommendation || 'Fit analysis completed successfully.',
+        sizeAdvice: analysisResult.analysis?.sizeAdvice || 'Size recommendation available.',
+        overlay: analysisResult.overlay || userData.photo
       });
       
       // Move to results step
