@@ -136,7 +136,7 @@ const Landing = () => {
             </div>
 
             {/* Right side - App visualization */}
-            <div className="relative flex justify-center lg:justify-end">
+            <div className="relative flex justify-center lg:justify-end lg:mr-8">
               {/* Phone frame */}
               <div className="relative w-80 h-[600px] bg-gray-900 rounded-[3rem] p-3 shadow-2xl">
                 {/* Screen */}

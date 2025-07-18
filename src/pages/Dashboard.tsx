@@ -169,9 +169,9 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 animate-fade-in">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white border-b border-gray-200 animate-slide-down">
         <div className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <div className="flex items-center">
@@ -182,7 +182,7 @@ const Dashboard = () => {
             </div>
             <Button 
               onClick={handleCreateNew}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-2xl px-6 py-2"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-2xl px-6 py-2 transition-all duration-300 hover:scale-105"
             >
               <Plus className="h-5 w-5 mr-2" />
               Create New Analysis
@@ -192,7 +192,7 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 animate-fade-in-up">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Fit Analyses</h1>
           <p className="text-gray-600">Track your past clothing fit recommendations and create new analyses</p>
@@ -284,7 +284,6 @@ const Dashboard = () => {
 
         {fitAnalyses.length === 0 && (
           <div className="text-center py-12">
-            <TShirtIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Fit Analyses Yet</h3>
             <p className="text-gray-600 mb-6">Start by creating your first fit analysis to see recommendations here.</p>
             <Button 
