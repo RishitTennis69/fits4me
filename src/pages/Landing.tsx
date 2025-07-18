@@ -143,7 +143,7 @@ const Landing = () => {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 bg-clip-text text-transparent mb-4">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-500 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
               Why Choose Fits4Me?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -201,7 +201,7 @@ const Landing = () => {
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 bg-clip-text text-transparent mb-4">
+            <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-500 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
               How It Works
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -244,7 +244,7 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-purple-700 via-blue-700 to-indigo-800">
+      <section className="py-20 bg-gradient-to-br from-purple-500 via-purple-600 to-blue-600">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
             Ready to Never Buy Ill-Fitting Clothes Again?
@@ -265,7 +265,7 @@ const Landing = () => {
               variant="outline"
               size="lg"
               onClick={() => setIsSignUp(true)}
-              className="border-white text-white hover:bg-white hover:text-purple-700 text-lg px-8 py-3 rounded-xl"
+              className="border-white text-purple-200 hover:bg-white hover:text-purple-700 text-lg px-8 py-3 rounded-xl"
             >
               Create Account
             </Button>
