@@ -222,7 +222,7 @@ const Landing = () => {
 
       {/* Core Features */}
       <section className="py-20" style={{ backgroundColor: '#FAFBFC' }}>
-        <div className="container mx-auto px-4">
+        <div className="w-full px-0">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
               Why Choose Fits4Me?
@@ -232,7 +232,7 @@ const Landing = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 w-full px-8">
             <Card className="bg-white border-gray-200 hover:border-purple-500 transition-colors shadow-lg rounded-xl">
               <CardHeader>
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center mb-4">
@@ -280,7 +280,7 @@ const Landing = () => {
 
       {/* How It Works */}
       <section className="py-20" style={{ backgroundColor: '#f8f8ff' }}>
-        <div className="container mx-auto px-4">
+        <div className="w-full px-0">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
               How It Works
@@ -290,7 +290,7 @@ const Landing = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 w-full px-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-white">
                 1
@@ -326,7 +326,7 @@ const Landing = () => {
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-purple-300 via-blue-400 to-blue-500">
-        <div className="container mx-auto px-4 text-center">
+        <div className="w-full text-center px-0">
           <h2 className="text-4xl font-bold text-white mb-8">
             Ready to Never Buy Poor Fitting Clothes Again?
           </h2>
