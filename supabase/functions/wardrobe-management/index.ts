@@ -95,6 +95,11 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
       console.log('handleAddItem: skipping AI analysis', { analyzeWithAI: itemData.analyzeWithAI, photoUrl: itemData.photoUrl });
     }
 
+    // Defensive fallback for name
+    const nameValue = (aiAnalysis?.description && aiAnalysis.description.trim()) ||
+      (aiAnalysis?.category && aiAnalysis.category.trim()) ||
+      'Unnamed Item';
+    console.log('AI Analysis:', aiAnalysis);
     // Only 'size' comes from user input, all other details from AI
     const wardrobeInsert = {
       user_id: userId,
@@ -102,8 +107,7 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
       photo_url: itemData.photoUrl,
       ai_analysis: aiAnalysis,
       ai_raw: aiRaw,
-      // The following fields are filled from AI if available
-      name: aiAnalysis?.description || aiAnalysis?.category || 'Unnamed Item',
+      name: nameValue,
       category: aiAnalysis?.category || null,
       color: aiAnalysis?.color || null,
       style: aiAnalysis?.style || null,
@@ -113,7 +117,7 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
       description: aiAnalysis?.description || null,
       measurements: aiAnalysis?.measurements || null
     };
-    console.log('handleAddItem: wardrobeInsert object', { wardrobeInsert });
+    console.log('Wardrobe Insert:', wardrobeInsert);
 
     const { data, error } = await supabase
       .from('user_wardrobe')
