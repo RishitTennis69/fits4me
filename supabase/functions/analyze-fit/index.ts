@@ -191,15 +191,13 @@ serve(async (req) => {
       }
     }
 
-    // 2. AI Fit Scores: Ask AI for both individual and overall fit scores in JSON
+    // 2. AI Fit Scores: Ask AI for only individual fit scores in JSON
     const fitScorePrompt = `You are a virtual clothing fit expert. Given the user's body measurements and the following clothing items, analyze the FIT ONLY and provide:
-1. An overall fit score (0-100, higher is better)
-2. An individual fit score (0-100) for each item, with a brief reason
-3. A recommendation for each item (e.g., fits well, too tight, too loose, consider another size)
-4. IMPORTANT: Do NOT comment on style, color, or whether the items look good together. Do NOT judge outfit compatibility, color harmony, or style cohesion. Only analyze fit.
-5. A comprehensive JSON response with this structure:
+1. An individual fit score (0-100) for each item, with a brief reason
+2. A recommendation for each item (e.g., fits well, too tight, too loose, consider another size)
+3. IMPORTANT: Do NOT comment on style, color, or whether the items look good together. Do NOT judge outfit compatibility, color harmony, or style cohesion. Only analyze fit.
+4. A comprehensive JSON response with this structure:
 {
-  "overallFitScore": number,
   "individualScores": [
     {
       "itemName": string,
@@ -255,7 +253,6 @@ Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no co
       }
     }
     // Use AI's fit scores if available
-    let overallFitScore = 0;
     let individualScores: Array<{
       itemName: string;
       fitScore: number;
@@ -263,9 +260,6 @@ Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no co
       recommendation: string;
     }> = [];
     if (aiFitScores && typeof aiFitScores === 'object' && aiFitScores !== null) {
-      if (typeof (aiFitScores as any).overallFitScore === 'number') {
-        overallFitScore = (aiFitScores as any).overallFitScore;
-      }
       if (Array.isArray((aiFitScores as any).individualScores)) {
         individualScores = (aiFitScores as any).individualScores;
       }
@@ -404,14 +398,13 @@ Respond in this exact JSON format:
 
     // Create the analysis result object
     const analysisResult = {
-      fitScore: overallFitScore,
       recommendation: individualScores.map(s => s.recommendation).join(' | '),
       sizeAdvice: individualScores.map(s => s.reason).join(' | '),
       alternativeSize: null, // Not provided by AI
       fitDetails: individualScores.map(s => `${s.itemName}: ${s.reason}`).join(' | '),
       brandComparison: "Size comparison data not available.",
       measurementComparison: '', // Not calculated
-      // preciseFitResults removed
+      individualScores: individualScores
     };
 
     console.log('Final analysis result:', analysisResult);
@@ -480,10 +473,8 @@ Respond in this exact JSON format:
     const responsePayload = {
       success: true,
       // Multi-item response structure
-      overallFitScore: overallFitScore,
       individualScores: individualScores,
       outfitRecommendation: individualScores.map(s => s.recommendation).join(' | '),
-      // outfitCompatibility removed
       combinedOverlay: overlayImageUrl || 'https://via.placeholder.com/1024x1024?text=Virtual+Try-On+Unavailable',
       // Backward compatibility for single item
       analysis: analysisResult,
