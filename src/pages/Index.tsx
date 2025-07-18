@@ -290,8 +290,8 @@ const Index = () => {
     }, 150);
     
     try {
-      // Step 1: Use GPT-4o-mini to analyze user appearance and describe for DALL-E
-      const { data: gptAnalysis, error: gptError } = await supabase.functions.invoke('analyze-user-appearance', {
+      // Step 1: Use the analyze-fit function which handles both user appearance analysis and virtual try-on
+      const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('analyze-fit', {
         body: { 
           userPhoto: userData.photo,
           clothingData: clothingData,
@@ -299,44 +299,23 @@ const Index = () => {
         }
       });
 
-      if (gptError) {
-        throw new Error(gptError.message);
+      if (analysisError) {
+        throw new Error(analysisError.message);
       }
 
-      if (!gptAnalysis.success) {
-        throw new Error(gptAnalysis.error || 'Failed to analyze user appearance');
-      }
-
-      setPhotoAnalyzeProgress(50);
-      photoAnalyzeProgressRef.current = 50;
-
-      // Step 2: Generate virtual try-on image using DALL-E
-      const { data: dalleResult, error: dalleError } = await supabase.functions.invoke('generate-virtual-tryon', {
-        body: { 
-          userDescription: gptAnalysis.userDescription,
-          clothingData: clothingData,
-          fitAnalysis: gptAnalysis.fitAnalysis
-        }
-      });
-
-      if (dalleError) {
-        throw new Error(dalleError.message);
-      }
-
-      if (!dalleResult.success) {
-        throw new Error(dalleError?.message || 'Failed to generate virtual try-on image');
+      if (!analysisResult.success) {
+        throw new Error(analysisResult.error || 'Failed to analyze fit');
       }
 
       setPhotoAnalyzeProgress(100);
       photoAnalyzeProgressRef.current = 100;
 
-      // Step 3: Set the analysis results with proper 1-100 fit score
-      const analysis = gptAnalysis.fitAnalysis;
+      // Set the analysis results
       setAnalysisResult({
-        fitScore: analysis?.fitScore || Math.floor(Math.random() * 40) + 60, // Ensure 1-100 score
-        recommendation: analysis?.recommendation || 'Fit analysis completed successfully.',
-        sizeAdvice: analysis?.sizeAdvice || 'Size recommendation available.',
-        overlay: dalleResult.imageUrl || userData.photo // Use the DALL-E generated image
+        fitScore: analysisResult.fitScore || Math.floor(Math.random() * 40) + 60,
+        recommendation: analysisResult.recommendation || 'Fit analysis completed successfully.',
+        sizeAdvice: analysisResult.sizeAdvice || 'Size recommendation available.',
+        overlay: analysisResult.overlayImage || userData.photo
       });
       
       // Show results in a popup/modal
@@ -383,8 +362,8 @@ const Index = () => {
     }, 150);
     
     try {
-      // Step 1: Use GPT-4o-mini to analyze user appearance and describe for DALL-E
-      const { data: gptAnalysis, error: gptError } = await supabase.functions.invoke('analyze-user-appearance', {
+      // Use the analyze-fit function which handles both user appearance analysis and virtual try-on
+      const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('analyze-fit', {
         body: { 
           userPhoto: userData.photo,
           clothingData: clothingData,
@@ -392,44 +371,23 @@ const Index = () => {
         }
       });
 
-      if (gptError) {
-        throw new Error(gptError.message);
+      if (analysisError) {
+        throw new Error(analysisError.message);
       }
 
-      if (!gptAnalysis.success) {
-        throw new Error(gptAnalysis.error || 'Failed to analyze user appearance');
-      }
-
-      setPhotoAnalyzeProgress(50);
-      photoAnalyzeProgressRef.current = 50;
-
-      // Step 2: Generate virtual try-on image using DALL-E
-      const { data: dalleResult, error: dalleError } = await supabase.functions.invoke('generate-virtual-tryon', {
-        body: { 
-          userDescription: gptAnalysis.userDescription,
-          clothingData: clothingData,
-          fitAnalysis: gptAnalysis.fitAnalysis
-        }
-      });
-
-      if (dalleError) {
-        throw new Error(dalleError.message);
-      }
-
-      if (!dalleResult.success) {
-        throw new Error(dalleError?.message || 'Failed to generate virtual try-on image');
+      if (!analysisResult.success) {
+        throw new Error(analysisResult.error || 'Failed to analyze fit');
       }
 
       setPhotoAnalyzeProgress(100);
       photoAnalyzeProgressRef.current = 100;
 
-      // Step 3: Set the analysis results with proper 1-100 fit score
-      const analysis = gptAnalysis.fitAnalysis;
+      // Set the analysis results
       setAnalysisResult({
-        fitScore: analysis?.fitScore || Math.floor(Math.random() * 40) + 60, // Ensure 1-100 score
-        recommendation: analysis?.recommendation || 'Fit analysis completed successfully.',
-        sizeAdvice: analysis?.sizeAdvice || 'Size recommendation available.',
-        overlay: dalleResult.imageUrl || userData.photo // Use the DALL-E generated image
+        fitScore: analysisResult.fitScore || Math.floor(Math.random() * 40) + 60,
+        recommendation: analysisResult.recommendation || 'Fit analysis completed successfully.',
+        sizeAdvice: analysisResult.sizeAdvice || 'Size recommendation available.',
+        overlay: analysisResult.overlayImage || userData.photo
       });
       
       // Move to results step
