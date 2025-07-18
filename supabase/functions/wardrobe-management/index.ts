@@ -79,10 +79,18 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
     console.log('handleAddItem: start', { userId, itemData });
     // Analyze the photo if AI analysis is requested
     let aiAnalysis: any = null;
+    let aiRaw: any = null;
     if (itemData.analyzeWithAI && itemData.photoUrl) {
       console.log('handleAddItem: analyzing photo with AI', { photoUrl: itemData.photoUrl });
-      aiAnalysis = await analyzeClothingPhoto(itemData.photoUrl, openaiApiKey);
-      console.log('handleAddItem: AI analysis result', { aiAnalysis });
+      try {
+        aiAnalysis = await analyzeClothingPhoto(itemData.photoUrl, openaiApiKey);
+        aiRaw = aiAnalysis;
+        console.log('handleAddItem: AI analysis result', { aiAnalysis });
+      } catch (aiError) {
+        console.error('handleAddItem: AI analysis error, saving raw response', { aiError });
+        aiAnalysis = null;
+        aiRaw = aiError?.raw || null;
+      }
     } else {
       console.log('handleAddItem: skipping AI analysis', { analyzeWithAI: itemData.analyzeWithAI, photoUrl: itemData.photoUrl });
     }
@@ -93,6 +101,7 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
       size: itemData.size,
       photo_url: itemData.photoUrl,
       ai_analysis: aiAnalysis,
+      ai_raw: aiRaw,
       // The following fields are filled from AI if available
       category: aiAnalysis?.category || null,
       color: aiAnalysis?.color || null,
@@ -113,7 +122,14 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
 
     if (error) {
       console.error('handleAddItem: error inserting item', { error });
-      throw error;
+      // Still return success to frontend so UI can move on
+      return new Response(JSON.stringify({
+        success: false,
+        error: error.message,
+        item: wardrobeInsert
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('handleAddItem: item added successfully', { data });
@@ -126,7 +142,13 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
 
   } catch (error) {
     console.error('handleAddItem: failed to add item', { error });
-    throw new Error(`Failed to add item: ${error.message}`);
+    // Always return a response so the frontend can move on
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 }
 
