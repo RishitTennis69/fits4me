@@ -201,7 +201,7 @@ const Landing = () => {
       <section className="py-20" style={{ backgroundColor: '#f8f8ff' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4" style={{ color: '#9370DB' }}>
+            <h2 className="text-4xl font-bold mb-4" style={{ color: '#8B5A8B' }}>
               How It Works
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
