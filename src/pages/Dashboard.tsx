@@ -139,7 +139,7 @@ const Dashboard = () => {
       return;
     }
 
-    navigate('/');
+    navigate('/app');
   };
 
   const formatDate = (dateString: string) => {
