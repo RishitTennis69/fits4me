@@ -949,16 +949,19 @@ const Index = () => {
                       {selectedItems.length > 1 ? 'Complete Outfit Try-On' : 'Virtual Try-On'}
                     </h4>
                     <div className="relative bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 p-4 rounded-2xl border border-blue-400/30">
+                      {/* DALL·E Link Instead of Image */}
                       {(() => {
                         const dalleUrl = selectedItems.length > 1 ? analysisResult?.combinedOverlay : analysisResult?.overlay;
                         console.log('DALL·E URL:', dalleUrl);
-                        return (
-                          <img
-                            src={dalleUrl}
-                            alt={selectedItems.length > 1 ? "Complete outfit try-on" : "Virtual try-on"}
-                            className="w-full h-72 object-cover rounded-2xl shadow-lg border-4 border-blue-300"
-                          />
-                        );
+                        if (dalleUrl) {
+                          return (
+                            <a href={dalleUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
+                              View DALL·E Virtual Try-On Image
+                            </a>
+                          );
+                        } else {
+                          return <span className="text-gray-500">No virtual try-on image available.</span>;
+                        }
                       })()}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl" />
                       <Badge className="absolute top-3 right-3 bg-green-600 text-white px-4 py-2 rounded-full shadow-lg text-base">
