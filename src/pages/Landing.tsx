@@ -89,7 +89,7 @@ const Landing = () => {
                   setShowAuthModal(true);
                 }}
                 variant="outline"
-                className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+                className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white rounded-xl"
               >
                 Sign In
               </Button>
@@ -98,7 +98,7 @@ const Landing = () => {
                   setIsSignUp(true);
                   setShowAuthModal(true);
                 }}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl"
               >
                 Sign Up
               </Button>
@@ -108,8 +108,7 @@ const Landing = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50"></div>
+      <section className="relative overflow-hidden bg-white">
         <div className="relative container mx-auto px-4 py-20">
           <div className="text-center max-w-4xl mx-auto pt-20">
             <div className="flex items-center justify-center mb-6">
@@ -119,7 +118,7 @@ const Landing = () => {
             <h1 className="text-6xl md:text-7xl font-bold leading-tight bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-6">
               Fits4Me
             </h1>
-            <p className="text-2xl md:text-3xl text-gray-800 mb-8 font-light">
+            <p className="text-2xl md:text-3xl text-gray-800 mb-8 font-semibold">
               Only Buy What Fits
             </p>
             <p className="text-lg text-gray-600 mb-12 max-w-2xl mx-auto">
@@ -131,7 +130,7 @@ const Landing = () => {
               onClick={scrollToMain}
               variant="outline"
               size="lg"
-              className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white text-lg px-8 py-3"
+              className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white text-lg px-8 py-3 rounded-xl"
             >
               Try It Now
               <ArrowRight className="h-5 w-5 ml-2" />
@@ -141,7 +140,7 @@ const Landing = () => {
       </section>
 
       {/* Core Features */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -153,7 +152,7 @@ const Landing = () => {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="bg-white border-gray-200 hover:border-purple-500 transition-colors shadow-lg">
+            <Card className="bg-white border-gray-200 hover:border-purple-500 transition-colors shadow-lg rounded-xl">
               <CardHeader>
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center mb-4">
                   <Camera className="h-6 w-6 text-white" />
@@ -167,7 +166,7 @@ const Landing = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-white border-gray-200 hover:border-purple-500 transition-colors shadow-lg">
+            <Card className="bg-white border-gray-200 hover:border-purple-500 transition-colors shadow-lg rounded-xl">
               <CardHeader>
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mb-4">
                   <Shirt className="h-6 w-6 text-white" />
@@ -181,7 +180,7 @@ const Landing = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-white border-gray-200 hover:border-purple-500 transition-colors shadow-lg">
+            <Card className="bg-white border-gray-200 hover:border-purple-500 transition-colors shadow-lg rounded-xl">
               <CardHeader>
                 <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg flex items-center justify-center mb-4">
                   <Target className="h-6 w-6 text-white" />
@@ -245,7 +244,7 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-purple-50 via-blue-50 to-pink-50">
+      <section className="py-20 bg-gradient-to-br from-purple-100 via-blue-100 to-indigo-100">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-6">
             Ready to Never Buy Ill-Fitting Clothes Again?
@@ -257,7 +256,7 @@ const Landing = () => {
             <Button 
               onClick={scrollToMain}
               size="lg"
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg px-8 py-3"
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg px-8 py-3 rounded-xl"
             >
               Try It Free
               <ArrowRight className="h-5 w-5 ml-2" />
@@ -266,7 +265,7 @@ const Landing = () => {
               variant="outline"
               size="lg"
               onClick={() => setIsSignUp(true)}
-              className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white text-lg px-8 py-3"
+              className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white text-lg px-8 py-3 rounded-xl"
             >
               Create Account
             </Button>
@@ -286,7 +285,7 @@ const Landing = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowAuthModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 rounded-xl"
               >
                 ✕
               </Button>
@@ -301,13 +300,13 @@ const Landing = () => {
                   placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mt-2 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
+                  className="mt-2 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 rounded-xl"
                 />
               </div>
               <Button 
                 onClick={handleAuth}
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg py-3"
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg py-3 rounded-xl"
               >
                 {isLoading ? (
                   <>
