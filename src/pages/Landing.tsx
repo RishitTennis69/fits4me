@@ -140,7 +140,7 @@ const Landing = () => {
       </section>
 
       {/* Core Features */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-500 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
@@ -198,7 +198,7 @@ const Landing = () => {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-blue-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-500 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
@@ -265,7 +265,7 @@ const Landing = () => {
               variant="outline"
               size="lg"
               onClick={() => setIsSignUp(true)}
-              className="border-white text-purple-200 hover:bg-white hover:text-purple-700 text-lg px-8 py-3 rounded-xl"
+              className="bg-white text-purple-700 hover:bg-gray-100 text-lg px-8 py-3 rounded-xl font-semibold"
             >
               Create Account
             </Button>
