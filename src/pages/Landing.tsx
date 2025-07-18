@@ -154,9 +154,7 @@ const Landing = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center">
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center mr-3">
-                      <TShirtIcon className="h-4 w-4 text-white" />
-                    </div>
+                    {/* Remove the icon here */}
                     <span className="text-lg font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 bg-clip-text text-transparent">
                       Fits4Me
                     </span>
