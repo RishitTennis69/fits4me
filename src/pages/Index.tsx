@@ -69,11 +69,20 @@ const Index = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        // Check if user has a stored photo in localStorage
-        const storedPhoto = localStorage.getItem(`user_photo_${user.id}`);
-        if (storedPhoto) {
-          setHasStoredPhoto(true);
-          setUserData(prev => ({ ...prev, photo: storedPhoto }));
+        // Check if user has a stored photo in database
+        try {
+          const { data: profile, error } = await supabase
+            .from('user_profiles')
+            .select('photo_url')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (!error && profile?.photo_url) {
+            setHasStoredPhoto(true);
+            setUserData(prev => ({ ...prev, photo: profile.photo_url }));
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
         }
       }
     };
@@ -85,11 +94,23 @@ const Index = () => {
     if (!user) return;
     
     try {
-      // Save to localStorage for now
-      localStorage.setItem(`user_photo_${user.id}`, photoUrl);
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: user.id,
+          photo_url: photoUrl,
+          updated_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
       setHasStoredPhoto(true);
     } catch (error) {
       console.error('Error saving user photo:', error);
+      toast({
+        title: "Warning",
+        description: "Could not save your photo for future use, but analysis will continue.",
+        variant: "destructive"
+      });
     }
   };
 

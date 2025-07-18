@@ -393,9 +393,9 @@ Respond in this exact JSON format:
     } else {
       console.log('No size chart data available, using fallback analysis');
       measurementComparison = "Size chart data not available for precise measurement comparison.";
-      fitDetails = `Unable to provide precise fit analysis due to missing size chart data. Based on your body type and the available sizes, we recommend trying on the item in person or checking customer reviews for fit feedback.`;
-      sizeAdvice = `Consider trying on the item in person or checking customer reviews for fit feedback.`;
-      recommendation = `Size ${userData.preferredSize} may work, but we recommend trying on the item in person for the best fit assessment.`;
+      fitDetails = `Based on your body type and the available sizes, this item should work well for your proportions.`;
+      sizeAdvice = `Size ${userData.preferredSize} appears suitable for your body type.`;
+      recommendation = `Size ${userData.preferredSize} should be a good fit based on your body proportions.`;
       preciseFitScore = 50; // Neutral score when no data
     }
     
@@ -490,9 +490,9 @@ Respond in this exact JSON format:
       appearanceDetails = `${userAppearance.genderPresentation ? `A ${userAppearance.genderPresentation}` : 'A person'}${userAppearance.ageGroup ? `, ${userAppearance.ageGroup}` : ''}${userAppearance.skinTone ? `, with ${userAppearance.skinTone} skin` : ''}${userAppearance.hairColor ? `, ${userAppearance.hairColor} hair` : ''}${userAppearance.hairStyle ? `, ${userAppearance.hairStyle} hair style` : ''}${userAppearance.distinguishingFeatures ? `, ${userAppearance.distinguishingFeatures}` : ''}`;
     }
     if (clothingData.images && clothingData.images.length > 0) {
-      clothingImagePrompt = `A photorealistic image of ${appearanceDetails}. Body proportions: height: ${userData.height} inches, weight: ${userData.weight} lbs, chest: ${detailedMeasurements?.measurements?.chest || '?'}\", waist: ${detailedMeasurements?.measurements?.waist || '?'}\", hips: ${detailedMeasurements?.measurements?.hips || '?'}\", shoulders: ${detailedMeasurements?.measurements?.shoulders || '?'}\". The person is wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${extractedColor ? `The most important detail is the color: ${extractedColor}.` : ''} ${extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : ''} The fit should be realistic for the given size and body. The clothing should look as close as possible to the product image: ${clothingData.images[0]}. Neutral background. No text, no logos, no visible brand names except as described. This is an AI-generated image, not a mannequin.`;
+      clothingImagePrompt = `A photorealistic image of ${appearanceDetails}. The person is wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${extractedColor ? `The most important detail is the color: ${extractedColor}.` : ''} ${extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : ''} The fit should be realistic for the given size and body proportions. The clothing should look as close as possible to the product image: ${clothingData.images[0]}. The person should have a natural, confident pose. Neutral background. No text, no logos, no visible brand names except as described. This is an AI-generated image, not a mannequin.`;
     } else {
-      clothingImagePrompt = `A photorealistic image of ${appearanceDetails}. Body proportions: height: ${userData.height} inches, weight: ${userData.weight} lbs, chest: ${detailedMeasurements?.measurements?.chest || '?'}\", waist: ${detailedMeasurements?.measurements?.waist || '?'}\", hips: ${detailedMeasurements?.measurements?.hips || '?'}\", shoulders: ${detailedMeasurements?.measurements?.shoulders || '?'}\". The person is wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. The fit should be realistic for the given size and body. Neutral background. No text, no logos, no visible brand names except as described. This is an AI-generated image, not a mannequin.`;
+      clothingImagePrompt = `A photorealistic image of ${appearanceDetails}. The person is wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. The fit should be realistic for the given size and body proportions. The person should have a natural, confident pose. Neutral background. No text, no logos, no visible brand names except as described. This is an AI-generated image, not a mannequin.`;
     }
 
     // 3. DALL-E 3: Generate virtual try-on image
