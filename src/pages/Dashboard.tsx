@@ -52,17 +52,21 @@ const Dashboard = () => {
 
       if (error) {
         console.error('Error fetching analyses:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load your fit analyses",
-          variant: "destructive"
-        });
+        // Only show error toast for actual database errors, not when user has no analyses
+        if (error.code !== 'PGRST116') { // PGRST116 is "not found" - normal for new users
+          toast({
+            title: "Error",
+            description: "Failed to load your fit analyses",
+            variant: "destructive"
+          });
+        }
         return;
       }
 
       setFitAnalyses(data || []);
     } catch (error) {
       console.error('Error fetching analyses:', error);
+      // Only show error toast for actual errors, not when user has no analyses
       toast({
         title: "Error",
         description: "Failed to load your fit analyses",
