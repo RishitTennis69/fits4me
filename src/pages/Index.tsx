@@ -826,10 +826,6 @@ const Index = () => {
                           <span>Individual Items</span>
                           <span>{selectedItems.length} items analyzed</span>
                         </div>
-                        <div className="flex justify-between text-sm">
-                          <span>Outfit Compatibility</span>
-                          <span>{analysisResult?.outfitCompatibility?.overallRating || 'Good'}</span>
-                        </div>
                       </div>
                     </div>
                     
@@ -953,11 +949,17 @@ const Index = () => {
                       {selectedItems.length > 1 ? 'Complete Outfit Try-On' : 'Virtual Try-On'}
                     </h4>
                     <div className="relative bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 p-4 rounded-2xl border border-blue-400/30">
-                      <img 
-                        src={selectedItems.length > 1 ? analysisResult?.combinedOverlay : analysisResult?.overlay} 
-                        alt={selectedItems.length > 1 ? "Complete outfit try-on" : "Virtual try-on"} 
-                        className="w-full h-72 object-cover rounded-2xl shadow-lg border-4 border-blue-300"
-                      />
+                      {(() => {
+                        const dalleUrl = selectedItems.length > 1 ? analysisResult?.combinedOverlay : analysisResult?.overlay;
+                        console.log('DALL·E URL:', dalleUrl);
+                        return (
+                          <img
+                            src={dalleUrl}
+                            alt={selectedItems.length > 1 ? "Complete outfit try-on" : "Virtual try-on"}
+                            className="w-full h-72 object-cover rounded-2xl shadow-lg border-4 border-blue-300"
+                          />
+                        );
+                      })()}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl" />
                       <Badge className="absolute top-3 right-3 bg-green-600 text-white px-4 py-2 rounded-full shadow-lg text-base">
                         {selectedItems.length > 1 ? `${selectedItems.length} Items` : `Size ${userData.preferredSize}`}
@@ -1035,7 +1037,7 @@ const Index = () => {
                     <p className="text-center text-gray-600">
                       {currentStep === 1 
                         ? "AI is analyzing the clothing item and extracting size information..."
-                        : "AI is analyzing your body proportions and outfit compatibility..."
+                        : "AI is analyzing your body proportions and fit..."
                       }
                     </p>
                   </div>
