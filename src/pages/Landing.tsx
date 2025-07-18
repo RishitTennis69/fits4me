@@ -77,152 +77,148 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header with Auth */}
-      <header className="absolute top-0 left-0 right-0 z-10">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            {/* Auth Section */}
-            <div className="flex items-center gap-3 ml-auto">
-              <Button 
-                onClick={() => {
-                  setIsSignUp(false);
-                  setShowAuthModal(true);
-                }}
-                variant="outline"
-                className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white rounded-xl"
-              >
-                Sign In
-              </Button>
-              <Button 
-                onClick={() => {
-                  setIsSignUp(true);
-                  setShowAuthModal(true);
-                }}
-                className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl"
-              >
-                Sign Up
-              </Button>
-            </div>
+      {/* Header */}
+      <header className="w-full flex items-center justify-between px-10 py-6 border-b border-gray-100 bg-white z-20">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+            <TShirtIcon className="h-6 w-6 text-white" />
           </div>
+          <div>
+            <span className="text-2xl font-bold text-gray-900 leading-tight">Fits4Me</span>
+            <span className="block text-xs text-gray-400 font-medium -mt-1">Virtual Try-On Platform</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            className="text-gray-700 hover:text-blue-600 font-semibold"
+            onClick={() => setShowAuthModal(true)}
+          >
+            Sign In
+          </Button>
+          <Button
+            className="bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md px-6 py-2 rounded-xl"
+            onClick={scrollToMain}
+          >
+            Get Started
+          </Button>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-white">
-        <div className="relative container mx-auto px-4 py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center pt-20">
-            {/* Left side - Text content */}
-            <div className="text-center lg:text-left">
-              <h1 className="text-6xl md:text-7xl font-bold leading-tight bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 bg-clip-text text-transparent mb-6">
-                Fits4Me
-              </h1>
-              <p className="text-2xl md:text-3xl text-gray-800 mb-8 font-semibold">
-                Only Buy What Fits
-              </p>
-              <p className="text-lg text-gray-600 mb-12 max-w-2xl mx-auto lg:mx-0">
-                Upload your photo, paste a clothing URL, and get instant AI-powered fit recommendations. 
-                Never buy clothes that don't fit again.
-              </p>
+      <section className="w-full flex flex-col lg:flex-row items-center justify-between px-0 md:px-16 py-20 bg-white min-h-[70vh]">
+        {/* Left: Text */}
+        <div className="flex-1 flex flex-col items-start justify-center max-w-xl px-8 lg:px-0">
+          <span className="inline-flex items-center mb-6 px-4 py-1 bg-green-100 text-green-700 font-semibold rounded-full text-sm shadow-sm">
+            <Star className="h-4 w-4 mr-2" /> #1 Virtual Try-On Platform
+          </span>
+          <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
+            Find Your Perfect <span className="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">Fit</span>
+          </h1>
+          <p className="text-lg text-gray-600 mb-10">
+            Upload your photo, paste a clothing URL, and get instant AI-powered fit recommendations. Never buy clothes that don't fit again.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 w-full">
+            <Button
+              className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-3 rounded-xl font-semibold shadow-lg flex-1"
+              onClick={scrollToMain}
+            >
+              Start Free
+            </Button>
+            <Button
+              variant="outline"
+              className="text-blue-700 border-blue-600 text-lg px-8 py-3 rounded-xl font-semibold flex-1"
+              onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              How It Works
+            </Button>
+          </div>
+        </div>
+        {/* Right: Phone Mockup */}
+        <div className="flex-1 flex justify-center items-center mt-16 lg:mt-0">
+          {/* Phone frame reused from before */}
+          <div className="relative w-80 h-[600px] bg-gray-900 rounded-[3rem] p-3 shadow-2xl">
+            <div className="w-full h-full bg-white rounded-[2.5rem] overflow-hidden relative">
+              {/* Status bar */}
+              <div className="h-8 bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-between px-6 text-white text-sm">
+                <span>9:41</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-1 h-1 bg-white rounded-full"></div>
+                  <div className="w-1 h-1 bg-white rounded-full"></div>
+                  <div className="w-1 h-1 bg-white rounded-full"></div>
+                </div>
+              </div>
 
-              <Button 
-                onClick={scrollToMain}
-                variant="outline"
-                size="lg"
-                className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white text-lg px-8 py-3 rounded-xl"
-              >
-                Try It Now
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
-            </div>
-
-            {/* Right side - App visualization */}
-            <div className="relative flex justify-center lg:justify-end lg:mr-8">
-              {/* Phone frame */}
-              <div className="relative w-80 h-[600px] bg-gray-900 rounded-[3rem] p-3 shadow-2xl">
-                {/* Screen */}
-                <div className="w-full h-full bg-white rounded-[2.5rem] overflow-hidden relative">
-                  {/* Status bar */}
-                  <div className="h-8 bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-between px-6 text-white text-sm">
-                    <span>9:41</span>
-                    <div className="flex items-center gap-1">
-                      <div className="w-1 h-1 bg-white rounded-full"></div>
-                      <div className="w-1 h-1 bg-white rounded-full"></div>
-                      <div className="w-1 h-1 bg-white rounded-full"></div>
+              {/* App content */}
+              <div className="p-6 h-full overflow-y-auto">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center mr-3">
+                      <TShirtIcon className="h-4 w-4 text-white" />
                     </div>
+                    <span className="text-lg font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 bg-clip-text text-transparent">
+                      Fits4Me
+                    </span>
                   </div>
-
-                  {/* App content */}
-                  <div className="p-6 h-full overflow-y-auto">
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center mr-3">
-                          <TShirtIcon className="h-4 w-4 text-white" />
-                        </div>
-                        <span className="text-lg font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 bg-clip-text text-transparent">
-                          Fits4Me
-                        </span>
-                      </div>
-                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm text-gray-600">👤</span>
-                      </div>
-                    </div>
-
-                    {/* Upload section */}
-                    <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-4 mb-6">
-                      <h3 className="font-semibold text-gray-900 mb-3">Upload Your Photo</h3>
-                      <div className="border-2 border-dashed border-purple-300 rounded-xl p-6 text-center">
-                        <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <Camera className="h-6 w-6 text-purple-600" />
-                        </div>
-                        <p className="text-sm text-gray-600">Tap to upload photo</p>
-                      </div>
-                    </div>
-
-                    {/* URL input */}
-                    <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-6">
-                      <h3 className="font-semibold text-gray-900 mb-3">Paste Clothing URL</h3>
-                      <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-500">
-                        https://www.nike.com/t/dri-fit-training-shirt...
-                      </div>
-                    </div>
-
-                    {/* Sample result */}
-                    <div className="bg-white border border-gray-200 rounded-2xl p-4">
-                      <h3 className="font-semibold text-gray-900 mb-3">Fit Analysis</h3>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-gray-600">Nike Dri-FIT Shirt</span>
-                        <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Definitely
-                        </div>
-                      </div>
-                      <div className="bg-gray-100 rounded-xl h-24 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <CheckCircle className="h-4 w-4 text-white" />
-                          </div>
-                          <p className="text-xs text-gray-600">Virtual Try-On</p>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex items-center justify-between">
-                        <span className="text-sm text-gray-600">Fit Score</span>
-                        <span className="text-lg font-bold text-green-600">92%</span>
-                      </div>
-                    </div>
+                  <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm text-gray-600">👤</span>
                   </div>
                 </div>
 
-                {/* Home indicator */}
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gray-400 rounded-full"></div>
+                {/* Upload section */}
+                <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-4 mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">Upload Your Photo</h3>
+                  <div className="border-2 border-dashed border-purple-300 rounded-xl p-6 text-center">
+                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Camera className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <p className="text-sm text-gray-600">Tap to upload photo</p>
+                  </div>
+                </div>
+
+                {/* URL input */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-3">Paste Clothing URL</h3>
+                  <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-500">
+                    https://www.nike.com/t/dri-fit-training-shirt...
+                  </div>
+                </div>
+
+                {/* Sample result */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-4">
+                  <h3 className="font-semibold text-gray-900 mb-3">Fit Analysis</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-gray-600">Nike Dri-FIT Shirt</span>
+                    <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                      Definitely
+                    </div>
+                  </div>
+                  <div className="bg-gray-100 rounded-xl h-24 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <CheckCircle className="h-4 w-4 text-white" />
+                      </div>
+                      <p className="text-xs text-gray-600">Virtual Try-On</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Fit Score</span>
+                    <span className="text-lg font-bold text-green-600">92%</span>
+                  </div>
+                </div>
               </div>
             </div>
+
+            {/* Home indicator */}
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gray-400 rounded-full"></div>
           </div>
         </div>
       </section>
 
       {/* Core Features */}
-      <section className="py-20" style={{ backgroundColor: '#FAFBFC' }}>
-        <div className="w-full px-0">
+      <section className="w-full py-20 bg-[#FAFBFC]">
+        <div className="max-w-7xl mx-auto px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
               Why Choose Fits4Me?
@@ -232,7 +228,7 @@ const Landing = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 w-full px-8">
+          <div className="grid md:grid-cols-3 gap-8 w-full">
             <Card className="bg-white border-gray-200 hover:border-purple-500 transition-colors shadow-lg rounded-xl">
               <CardHeader>
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center mb-4">
@@ -279,8 +275,8 @@ const Landing = () => {
       </section>
 
       {/* How It Works */}
-      <section className="py-20" style={{ backgroundColor: '#f8f8ff' }}>
-        <div className="w-full px-0">
+      <section id="how-it-works" className="w-full py-20 bg-[#f8f8ff]">
+        <div className="max-w-5xl mx-auto px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
               How It Works
@@ -290,7 +286,7 @@ const Landing = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 w-full px-8">
+          <div className="grid md:grid-cols-3 gap-8 w-full">
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-white">
                 1
@@ -325,8 +321,8 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-purple-300 via-blue-400 to-blue-500">
-        <div className="w-full text-center px-0">
+      <section className="w-full py-20 bg-gradient-to-br from-purple-300 via-blue-400 to-blue-500">
+        <div className="max-w-3xl mx-auto text-center px-8">
           <h2 className="text-4xl font-bold text-white mb-8">
             Ready to Never Buy Poor Fitting Clothes Again?
           </h2>
