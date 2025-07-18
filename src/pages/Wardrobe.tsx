@@ -32,7 +32,7 @@ const Wardrobe = () => {
     category: '',
     color: '',
     size: '',
-    sizeType: '' // New field for size type
+    sizeType: ''
   });
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -375,56 +375,15 @@ const Wardrobe = () => {
                 {/* Item Details Form */}
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="name">Item Name</Label>
+                    <Label htmlFor="size">Size</Label>
                     <Input
-                      id="name"
-                      value={newItemData.name}
-                      onChange={(e) => setNewItemData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g., Blue Denim Jacket"
+                      id="size"
+                      value={newItemData.size}
+                      onChange={(e) => setNewItemData(prev => ({ ...prev, size: e.target.value }))}
+                      placeholder="e.g., M"
                     />
                   </div>
-                  
                   <div>
-                    <Label htmlFor="category">Category</Label>
-                    <select
-                      id="category"
-                      value={newItemData.category}
-                      onChange={(e) => setNewItemData(prev => ({ ...prev, category: e.target.value }))}
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">Select category</option>
-                      <option value="shirt">Shirt</option>
-                      <option value="pants">Pants</option>
-                      <option value="dress">Dress</option>
-                      <option value="jacket">Jacket</option>
-                      <option value="sweater">Sweater</option>
-                      <option value="skirt">Skirt</option>
-                      <option value="shoes">Shoes</option>
-                      <option value="accessory">Accessory</option>
-                    </select>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="color">Color</Label>
-                      <Input
-                        id="color"
-                        value={newItemData.color}
-                        onChange={(e) => setNewItemData(prev => ({ ...prev, color: e.target.value }))}
-                        placeholder="e.g., Navy Blue"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="size">Size</Label>
-                      <Input
-                        id="size"
-                        value={newItemData.size}
-                        onChange={(e) => setNewItemData(prev => ({ ...prev, size: e.target.value }))}
-                        placeholder="e.g., M"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">
                     <Label htmlFor="sizeType">Size Type</Label>
                     <select
                       id="sizeType"
@@ -439,6 +398,38 @@ const Wardrobe = () => {
                     </select>
                   </div>
                 </div>
+                {/* After AI analysis, show category, color, and name fields for review/edit */}
+                {aiAnalysis && (
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <Label htmlFor="name">Item Name</Label>
+                      <Input
+                        id="name"
+                        value={newItemData.name}
+                        onChange={(e) => setNewItemData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g., Blue Denim Jacket"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="category">Category</Label>
+                      <Input
+                        id="category"
+                        value={newItemData.category}
+                        onChange={(e) => setNewItemData(prev => ({ ...prev, category: e.target.value }))}
+                        placeholder="e.g., Shirt, Pants, etc."
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="color">Color</Label>
+                      <Input
+                        id="color"
+                        value={newItemData.color}
+                        onChange={(e) => setNewItemData(prev => ({ ...prev, color: e.target.value }))}
+                        placeholder="e.g., Navy Blue"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4">
