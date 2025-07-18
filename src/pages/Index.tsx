@@ -60,6 +60,7 @@ const Index = () => {
   const photoAnalyzeProgressRef = React.useRef<number>(0);
   const photoAnalyzeIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [showSizeModal, setShowSizeModal] = useState(false);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const cameraInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -207,16 +208,8 @@ const Index = () => {
         description: "Successfully extracted clothing data from the URL"
       });
       
-      // Auto-scroll to show the size selection
-      setTimeout(() => {
-        const sizeSelectionElement = document.querySelector('[data-size-selection]');
-        if (sizeSelectionElement) {
-          sizeSelectionElement.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
-          });
-        }
-      }, 500);
+      // Show size selection modal
+      setShowSizeModal(true);
       
       // Don't automatically advance to step 2 - let user select size first
     } catch (error) {
@@ -602,38 +595,6 @@ const Index = () => {
                           </div>
                         </CardContent>
                       </Card>
-                      
-                      {/* Size Selection */}
-                      <Card className="bg-white border-gray-200 shadow-lg" data-size-selection>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-3 text-purple-600">
-                            <Shirt className="h-6 w-6 text-purple-500" />
-                            Select Your Preferred Size
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <p className="text-sm text-gray-600 mb-4">Choose your preferred size. Our AI will analyze your photo and compare your measurements with the product's size chart to give you the best fit recommendation.</p>
-                          <div className="flex gap-3 mt-3">
-                                {clothingData.sizes.map(size => (
-                              <Button
-                                key={size}
-                                variant={userData.preferredSize === size ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setUserData(prev => ({ ...prev, preferredSize: size }))}
-                                className={`rounded-full px-4 py-2 font-semibold transition-all duration-200 ${userData.preferredSize === size ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg scale-105' : 'bg-white text-blue-600 border-gray-300 hover:bg-gray-50'}`}
-                              >
-                                {size}
-                              </Button>
-                            ))}
-                          </div>
-                          <Button 
-                            onClick={() => setCurrentStep(2)}
-                            className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300 mt-4"
-                          >
-                            Continue to Photo Upload
-                          </Button>
-                        </CardContent>
-                      </Card>
                     </div>
                   )}
               </CardContent>
@@ -869,6 +830,70 @@ const Index = () => {
             )}
         </div>
       </div>
+      
+      {/* Size Selection Modal */}
+      {showSizeModal && clothingData && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-8 max-w-md w-full shadow-xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Select Your Size</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSizeModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <div className="space-y-6">
+              {/* Clothing Preview */}
+              <div className="text-center">
+                <img src={clothingData.images[0]} alt={clothingData.name} className="w-full h-48 object-cover rounded-2xl bg-gray-100 shadow-lg border-4 border-blue-200 mb-4" />
+                <h3 className="font-semibold text-lg text-gray-900">{clothingData.name}</h3>
+                <p className="text-xl font-bold text-green-600">{clothingData.price}</p>
+              </div>
+              
+              {/* Size Selection */}
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">Choose your preferred size. Our AI will analyze your photo and compare your measurements with the product's size chart to give you the best fit recommendation.</p>
+                <div className="flex gap-3 justify-center">
+                  {clothingData.sizes.map(size => (
+                    <Button
+                      key={size}
+                      variant={userData.preferredSize === size ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setUserData(prev => ({ ...prev, preferredSize: size }))}
+                      className={`rounded-full px-6 py-3 font-semibold transition-all duration-200 ${userData.preferredSize === size ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg scale-105' : 'bg-white text-blue-600 border-gray-300 hover:bg-gray-50'}`}
+                    >
+                      {size}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  onClick={() => setShowSizeModal(false)}
+                  className="flex-1 bg-gray-500 hover:bg-gray-600"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowSizeModal(false);
+                    setCurrentStep(2);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+                >
+                  Continue to Photo Upload
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Results Popup */}
       {showResults && analysisResult && (
