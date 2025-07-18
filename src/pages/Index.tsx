@@ -566,7 +566,7 @@ const Index = () => {
               <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-green-600">
                     <Upload className="h-6 w-6 text-green-500" />
-                  Step 2: Upload Photo & Analyze Fit
+                  Step 2: Upload Full Body Photo & Analyze Fit
                 </CardTitle>
               </CardHeader>
                 <CardContent className="space-y-6">
@@ -633,7 +633,14 @@ const Index = () => {
                     ) : (
                       <div className="space-y-2 mt-4">
                         <Upload className="h-10 w-10 mx-auto text-gray-400" />
-                        <p className="text-gray-600 font-medium">Upload or take a photo to continue</p>
+                        <p className="text-gray-600 font-medium">Upload or take a full body photo</p>
+                        <p className="text-sm text-gray-500 mb-2">For best results, please upload a clear full body photo where:</p>
+                        <ul className="text-xs text-gray-500 text-left space-y-1 mb-2">
+                          <li>• Your entire body is visible from head to toe</li>
+                          <li>• You're standing in a natural pose</li>
+                          <li>• The lighting is good and clear</li>
+                          <li>• You're wearing form-fitting clothes (not baggy)</li>
+                        </ul>
                         <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
                       </div>
                     )}
