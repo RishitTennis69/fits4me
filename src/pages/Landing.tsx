@@ -25,6 +25,7 @@ const Landing = () => {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleAuth = async () => {
     if (!email) {
@@ -81,48 +82,26 @@ const Landing = () => {
             </div>
             
             {/* Auth Section */}
-            <div className="flex items-center gap-4">
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <Label htmlFor="email" className="text-white text-sm">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="mt-1 bg-gray-700 border-gray-600 text-white placeholder:text-gray-400 w-48"
-                    />
-                  </div>
-                  <Button 
-                    onClick={handleAuth}
-                    disabled={isLoading}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="h-4 w-4 mr-2" />
-                        {isSignUp ? 'Sign Up' : 'Sign In'}
-                      </>
-                    )}
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-300 text-center mt-2">
-                  {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-                  <button
-                    onClick={() => setIsSignUp(!isSignUp)}
-                    className="text-purple-400 hover:text-purple-300 underline"
-                  >
-                    {isSignUp ? 'Sign In' : 'Sign Up'}
-                  </button>
-                </p>
-              </div>
+            <div className="flex items-center gap-3">
+              <Button 
+                onClick={() => {
+                  setIsSignUp(false);
+                  setShowAuthModal(true);
+                }}
+                variant="outline"
+                className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-white"
+              >
+                Sign In
+              </Button>
+              <Button 
+                onClick={() => {
+                  setIsSignUp(true);
+                  setShowAuthModal(true);
+                }}
+                className="bg-purple-500 hover:bg-purple-600 text-white"
+              >
+                Sign Up
+              </Button>
             </div>
           </div>
         </div>
@@ -135,7 +114,7 @@ const Landing = () => {
           <div className="text-center max-w-4xl mx-auto pt-20">
             <div className="flex items-center justify-center mb-6">
               <Sparkles className="h-8 w-8 text-white mr-3" />
-              <span className="text-white font-semibold">AI-Powered Virtual Fitting</span>
+              <span className="text-white font-semibold">AI-Powered Recommendations</span>
             </div>
             <h1 className="text-6xl md:text-7xl font-bold leading-tight bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent mb-6">
               Fits4Me
@@ -152,7 +131,7 @@ const Landing = () => {
               onClick={scrollToMain}
               variant="outline"
               size="lg"
-              className="border-white text-white hover:bg-white hover:text-gray-900 text-lg px-8 py-3"
+              className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white text-lg px-8 py-3"
             >
               Try It Now
               <ArrowRight className="h-5 w-5 ml-2" />
@@ -294,6 +273,67 @@ const Landing = () => {
           </div>
         </div>
       </section>
+      
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800/95 border border-gray-700 rounded-2xl p-8 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">
+                {isSignUp ? 'Create Account' : 'Sign In'}
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAuthModal(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="modal-email" className="text-gray-300">Email</Label>
+                <Input
+                  id="modal-email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-2 bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
+                />
+              </div>
+              <Button 
+                onClick={handleAuth}
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-lg py-3"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-5 w-5 mr-2" />
+                    {isSignUp ? 'Sign Up' : 'Sign In'} with Magic Link
+                  </>
+                )}
+              </Button>
+              <p className="text-sm text-gray-400 text-center">
+                {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+                <button
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-purple-400 hover:text-purple-300 underline"
+                >
+                  {isSignUp ? 'Sign In' : 'Sign Up'}
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
