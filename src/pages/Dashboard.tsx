@@ -24,12 +24,13 @@ import { TShirtIcon } from '@/components/ui/tshirt-icon';
 
 interface FitAnalysis {
   id: string;
+  user_id: string;
   clothing_name: string;
   clothing_url: string;
   preferred_size: string;
   fit_score: number;
   recommendation: string;
-  overlay_image: string;
+  overlay_image: string | null;
   created_at: string;
   likes: number;
   comments: number;
@@ -46,87 +47,34 @@ const Dashboard = () => {
   const [newPreferredSize, setNewPreferredSize] = useState('M');
   const [isCreating, setIsCreating] = useState(false);
 
-  // Mock data for demonstration
-  const mockAnalyses: FitAnalysis[] = [
-    {
-      id: '1',
-      clothing_name: 'Nike Dri-FIT Training Shirt',
-      clothing_url: 'https://www.nike.com/t/dri-fit-training-shirt',
-      preferred_size: 'L',
-      fit_score: 92,
-      recommendation: 'Definitely - Perfect fit for your body type!',
-      overlay_image: '/placeholder-shirt.jpg',
-      created_at: '2024-01-15T10:30:00Z',
-      likes: 3,
-      comments: 1,
-      views: 12
-    },
-    {
-      id: '2',
-      clothing_name: 'Levi\'s 501 Original Jeans',
-      clothing_url: 'https://www.levi.com/501-original-jeans',
-      preferred_size: '32x32',
-      fit_score: 78,
-      recommendation: 'Probably Yes - Good fit potential with slight adjustments',
-      overlay_image: '/placeholder-jeans.jpg',
-      created_at: '2024-01-10T14:20:00Z',
-      likes: 1,
-      comments: 0,
-      views: 8
-    },
-    {
-      id: '3',
-      clothing_name: 'Adidas Ultraboost Running Shoes',
-      clothing_url: 'https://www.adidas.com/ultraboost-running-shoes',
-      preferred_size: '10.5',
-      fit_score: 85,
-      recommendation: 'Definitely - Excellent fit for your foot shape!',
-      overlay_image: '/placeholder-shoes.jpg',
-      created_at: '2024-01-08T09:15:00Z',
-      likes: 5,
-      comments: 2,
-      views: 18
-    },
-    {
-      id: '4',
-      clothing_name: 'Uniqlo Cotton Crew Neck T-Shirt',
-      clothing_url: 'https://www.uniqlo.com/cotton-crew-neck-tshirt',
-      preferred_size: 'M',
-      fit_score: 65,
-      recommendation: 'Maybe - Consider trying on first',
-      overlay_image: '/placeholder-tshirt.jpg',
-      created_at: '2024-01-05T16:45:00Z',
-      likes: 0,
-      comments: 1,
-      views: 6
-    },
-    {
-      id: '5',
-      clothing_name: 'Zara Slim Fit Blazer',
-      clothing_url: 'https://www.zara.com/slim-fit-blazer',
-      preferred_size: '40R',
-      fit_score: 45,
-      recommendation: 'Probably No - Not recommended for your measurements',
-      overlay_image: '/placeholder-blazer.jpg',
-      created_at: '2024-01-03T11:30:00Z',
-      likes: 0,
-      comments: 0,
-      views: 4
-    },
-    {
-      id: '6',
-      clothing_name: 'H&M Basic Hoodie',
-      clothing_url: 'https://www.hm.com/basic-hoodie',
-      preferred_size: 'L',
-      fit_score: 88,
-      recommendation: 'Definitely - Great fit and style for you!',
-      overlay_image: '/placeholder-hoodie.jpg',
-      created_at: '2024-01-01T13:20:00Z',
-      likes: 2,
-      comments: 0,
-      views: 10
+  const fetchUserAnalyses = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('fit_analyses')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching analyses:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your fit analyses",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setFitAnalyses(data || []);
+    } catch (error) {
+      console.error('Error fetching analyses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load your fit analyses",
+        variant: "destructive"
+      });
     }
-  ];
+  };
 
   useEffect(() => {
     const checkUser = async () => {
@@ -135,17 +83,16 @@ const Dashboard = () => {
       
       if (session?.user) {
         setUser(session.user);
-        // For now, use mock data. In production, fetch from database
-        setFitAnalyses(mockAnalyses);
+        await fetchUserAnalyses(session.user.id);
         setIsLoading(false);
         return;
       }
 
       // If no session, set up auth state listener
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
           setUser(session.user);
-          setFitAnalyses(mockAnalyses);
+          await fetchUserAnalyses(session.user.id);
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setFitAnalyses([]);
@@ -157,7 +104,7 @@ const Dashboard = () => {
       const { data: { user }, error } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        setFitAnalyses(mockAnalyses);
+        await fetchUserAnalyses(user.id);
       }
       setIsLoading(false);
 
@@ -193,14 +140,48 @@ const Dashboard = () => {
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to create analyses",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsCreating(true);
     try {
-      // Here you would call your analysis function
-      // For now, just simulate the process
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Extract clothing name from URL (basic implementation)
+      const url = new URL(newClothingUrl);
+      const clothingName = url.hostname.replace('www.', '').split('.')[0] + ' Item';
+      
+      // Create new analysis record
+      const { data, error } = await supabase
+        .from('fit_analyses')
+        .insert({
+          user_id: user.id,
+          clothing_name: clothingName,
+          clothing_url: newClothingUrl,
+          preferred_size: newPreferredSize,
+          fit_score: Math.floor(Math.random() * 40) + 60, // Random score between 60-100 for demo
+          recommendation: 'Analysis in progress...',
+          overlay_image: null,
+          likes: 0,
+          comments: 0,
+          views: 0
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      // Refresh the analyses list
+      await fetchUserAnalyses(user.id);
       
       toast({
-        title: "Analysis Complete",
+        title: "Analysis Created",
         description: "Your new fit analysis has been added to your dashboard!",
       });
       
@@ -208,9 +189,10 @@ const Dashboard = () => {
       setNewClothingUrl('');
       setNewPreferredSize('M');
     } catch (error) {
+      console.error('Error creating analysis:', error);
       toast({
         title: "Analysis Failed",
-        description: "Failed to analyze the clothing item. Please try again.",
+        description: "Failed to create the analysis. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -310,7 +292,7 @@ const Dashboard = () => {
                 {/* Virtual Try-On Preview */}
                 <div className="relative mb-4 rounded-2xl overflow-hidden bg-gray-100 h-32">
                   <img 
-                    src={analysis.overlay_image} 
+                    src={analysis.overlay_image || 'https://via.placeholder.com/300x200/f3f4f6/9ca3af?text=Virtual+Try-On'} 
                     alt="Virtual try-on" 
                     className="w-full h-full object-cover"
                     onError={(e) => {
