@@ -39,7 +39,10 @@ const Landing = () => {
 
     setIsLoading(true);
     try {
-      const redirectUrl = `${window.location.origin}/app`;
+      // Try using a relative redirect URL first, fallback to absolute
+      const redirectUrl = window.location.hostname === 'localhost' 
+        ? `${window.location.origin}/app`
+        : 'https://fits4me.vercel.app/app';
       console.log('Current origin:', window.location.origin);
       console.log('Redirect URL:', redirectUrl);
       
@@ -147,7 +150,7 @@ const Landing = () => {
       <section className="py-20" style={{ backgroundColor: '#FAF9F6' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4" style={{ color: '#2563EB' }}>
+            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
               Why Choose Fits4Me?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -205,7 +208,7 @@ const Landing = () => {
       <section className="py-20" style={{ backgroundColor: '#f8f8ff' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4" style={{ color: '#2563EB' }}>
+            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
               How It Works
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
