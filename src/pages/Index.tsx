@@ -251,13 +251,13 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
+    <div id="main-app" className="min-h-screen bg-gray-900 flex items-center justify-center">
       <div className="container mx-auto px-4 py-12 flex flex-col items-center">
         <div className="text-center mb-12 w-full max-w-2xl">
-          <h1 className="text-5xl font-bold leading-normal bg-gradient-to-r from-purple-600 via-blue-500 to-pink-500 bg-clip-text text-transparent mb-4 drop-shadow-lg">
+          <h1 className="text-5xl font-bold leading-normal bg-gradient-to-r from-purple-400 via-blue-400 to-pink-400 bg-clip-text text-transparent mb-4 drop-shadow-lg">
             Fits4Me
           </h1>
-          <p className="text-xl text-gray-700 font-medium max-w-2xl mx-auto">
+          <p className="text-xl text-gray-300 font-medium max-w-2xl mx-auto">
             Only Buy What Fits
           </p>
         </div>
@@ -271,7 +271,7 @@ const Index = () => {
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shadow-lg transition-colors duration-300 border-2 cursor-pointer ${
                   currentStep >= step 
                       ? 'bg-gradient-to-br from-blue-500 to-purple-500 text-white border-blue-400 scale-110' 
-                      : 'bg-white/60 text-gray-400 border-gray-200 cursor-default'
+                      : 'bg-gray-800/60 text-gray-400 border-gray-600 cursor-default'
                   }`}
                   onClick={() => {
                     if (step < currentStep) setCurrentStep(step);
@@ -283,7 +283,7 @@ const Index = () => {
                 </div>
                 {step < 3 && (
                   <div className={`w-16 h-1 mx-2 rounded-full transition-colors duration-300 ${
-                    currentStep > step ? 'bg-gradient-to-r from-blue-400 to-purple-400' : 'bg-gray-200'
+                    currentStep > step ? 'bg-gradient-to-r from-blue-400 to-purple-400' : 'bg-gray-600'
                   }`} />
                 )}
               </div>
@@ -296,22 +296,22 @@ const Index = () => {
           {currentStep === 1 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
             {/* Step 1: Clothing URL + Size Selection */}
-              <Card className="glassmorphism-card p-10 text-lg">
+              <Card className="bg-gray-800/50 border-gray-700 p-10 text-lg backdrop-blur-sm">
               <CardHeader>
-                  <CardTitle className="flex items-center gap-3 text-blue-700">
-                    <Link className="h-6 w-6 text-blue-500" />
+                  <CardTitle className="flex items-center gap-3 text-blue-300">
+                    <Link className="h-6 w-6 text-blue-400" />
                   Step 1: Enter Clothing URL & Select Size
                 </CardTitle>
               </CardHeader>
                 <CardContent className="space-y-6">
                 <div>
-                    <Label htmlFor="clothing-url" className="text-base">Clothing Item URL</Label>
+                    <Label htmlFor="clothing-url" className="text-base text-gray-300">Clothing Item URL</Label>
                   <Input
                     id="clothing-url"
                     placeholder="https://www.amazon.com/..."
                     value={clothingUrl}
                     onChange={(e) => setClothingUrl(e.target.value)}
-                      className="mt-2 glassmorphism-input"
+                      className="mt-2 bg-gray-700 border-gray-600 text-white placeholder:text-gray-400"
                   />
                 </div>
                 <Button 
@@ -334,34 +334,34 @@ const Index = () => {
                   {/* Show clothing preview and size selection after scraping */}
                   {clothingData && !isAnalyzing && (
                     <div className="mt-8 animate-fade-in-up space-y-6">
-                      <Card className="glassmorphism-card">
+                      <Card className="bg-gray-800/50 border-gray-700">
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-3 text-blue-700">
-                            <Shirt className="h-6 w-6 text-blue-500" />
+                          <CardTitle className="flex items-center gap-3 text-blue-300">
+                            <Shirt className="h-6 w-6 text-blue-400" />
                             Clothing Item
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-6">
-                            <img src={clothingData.images[0]} alt={clothingData.name} className="w-full h-56 object-cover rounded-2xl bg-gray-100 shadow-lg border-4 border-blue-100" />
+                            <img src={clothingData.images[0]} alt={clothingData.name} className="w-full h-56 object-cover rounded-2xl bg-gray-700 shadow-lg border-4 border-blue-900/50" />
                             <div>
-                              <h3 className="font-semibold text-xl text-blue-800">{clothingData.name}</h3>
-                              <p className="text-2xl font-bold text-green-600">{clothingData.price}</p>
+                              <h3 className="font-semibold text-xl text-blue-200">{clothingData.name}</h3>
+                              <p className="text-2xl font-bold text-green-400">{clothingData.price}</p>
                             </div>
                           </div>
                         </CardContent>
                       </Card>
                       
                       {/* Size Selection */}
-                      <Card className="glassmorphism-card">
+                      <Card className="bg-gray-800/50 border-gray-700">
                         <CardHeader>
-                          <CardTitle className="flex items-center gap-3 text-purple-700">
-                            <Shirt className="h-6 w-6 text-purple-500" />
+                          <CardTitle className="flex items-center gap-3 text-purple-300">
+                            <Shirt className="h-6 w-6 text-purple-400" />
                             Select Your Preferred Size
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          <p className="text-sm text-gray-600 mb-4">Choose your preferred size. Our AI will analyze your photo and compare your measurements with the product's size chart to give you the best fit recommendation.</p>
+                          <p className="text-sm text-gray-400 mb-4">Choose your preferred size. Our AI will analyze your photo and compare your measurements with the product's size chart to give you the best fit recommendation.</p>
                           <div className="flex gap-3 mt-3">
                                 {clothingData.sizes.map(size => (
                               <Button
@@ -369,7 +369,7 @@ const Index = () => {
                                 variant={userData.preferredSize === size ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => setUserData(prev => ({ ...prev, preferredSize: size }))}
-                                className={`rounded-full px-4 py-2 font-semibold transition-all duration-200 ${userData.preferredSize === size ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg scale-105' : 'bg-white/60 text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                                className={`rounded-full px-4 py-2 font-semibold transition-all duration-200 ${userData.preferredSize === size ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg scale-105' : 'bg-gray-700/60 text-blue-300 border-gray-600 hover:bg-gray-600'}`}
                               >
                                 {size}
                               </Button>
@@ -392,15 +392,15 @@ const Index = () => {
           {currentStep === 2 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
             {/* Step 2: Photo Upload */}
-              <Card className="glassmorphism-card p-10 text-lg">
+              <Card className="bg-gray-800/50 border-gray-700 p-10 text-lg backdrop-blur-sm">
               <CardHeader>
-                  <CardTitle className="flex items-center gap-3 text-green-700">
-                    <Upload className="h-6 w-6 text-green-500" />
+                  <CardTitle className="flex items-center gap-3 text-green-300">
+                    <Upload className="h-6 w-6 text-green-400" />
                   Step 2: Upload Your Photo
                 </CardTitle>
               </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-white/40 backdrop-blur-md shadow-inner flex flex-col items-center gap-4">
+                  <div className="border-2 border-dashed border-gray-600 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors bg-gray-700/40 backdrop-blur-md shadow-inner flex flex-col items-center gap-4">
                   <input
                       ref={uploadInputRef}
                     type="file"
@@ -422,7 +422,7 @@ const Index = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        className="px-6 py-3 text-lg"
+                        className="px-6 py-3 text-lg border-gray-600 text-gray-300 hover:bg-gray-700"
                         onClick={() => uploadInputRef.current?.click()}
                         disabled={currentStep < 2}
                       >
@@ -431,7 +431,7 @@ const Index = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        className="px-6 py-3 text-lg"
+                        className="px-6 py-3 text-lg border-gray-600 text-gray-300 hover:bg-gray-700"
                         onClick={() => cameraInputRef.current?.click()}
                         disabled={currentStep < 2}
                       >
@@ -440,8 +440,8 @@ const Index = () => {
                     </div>
                     {userData.photo ? (
                       <div className="space-y-2 mt-4">
-                        <img src={userData.photo} alt="Your photo" className="max-h-32 mx-auto rounded-xl shadow-lg border-4 border-green-200" />
-                        <p className="text-base text-green-700 font-semibold">Photo uploaded!</p>
+                        <img src={userData.photo} alt="Your photo" className="max-h-32 mx-auto rounded-xl shadow-lg border-4 border-green-900/50" />
+                        <p className="text-base text-green-300 font-semibold">Photo uploaded!</p>
                         <Button 
                           onClick={handleAnalyze}
                           disabled={isAnalyzing}
@@ -462,9 +462,9 @@ const Index = () => {
                       </div>
                     ) : (
                       <div className="space-y-2 mt-4">
-                        <Upload className="h-10 w-10 mx-auto text-gray-400" />
-                        <p className="text-gray-600 font-medium">Upload or take a photo to continue</p>
-                        <p className="text-xs text-gray-400">PNG, JPG up to 10MB</p>
+                        <Upload className="h-10 w-10 mx-auto text-gray-500" />
+                        <p className="text-gray-400 font-medium">Upload or take a photo to continue</p>
+                        <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
                       </div>
                     )}
                 </div>
@@ -474,52 +474,52 @@ const Index = () => {
           )}
           {currentStep === 3 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
-              <Card className="glassmorphism-card p-10 text-lg">
+              <Card className="bg-gray-800/50 border-gray-700 p-10 text-lg backdrop-blur-sm">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-3 text-green-700">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  <CardTitle className="flex items-center gap-3 text-green-300">
+                    <CheckCircle className="h-6 w-6 text-green-400" />
                     Fit Analysis Results
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-8">
                   {/* Fit Score */}
                   <div className="text-center">
-                    <div className="text-4xl font-extrabold text-green-600 mb-2 drop-shadow-lg">
+                    <div className="text-4xl font-extrabold text-green-400 mb-2 drop-shadow-lg">
                       {analysisResult?.fitScore || 75}%
                     </div>
-                    <p className="text-base text-gray-600">Fit Score</p>
+                    <p className="text-base text-gray-400">Fit Score</p>
                     <Progress value={analysisResult?.fitScore || 75} className="mt-3 h-5" />
                     {/* Fit Score Guide */}
-                    <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
-                      <h4 className="font-semibold text-blue-800 mb-2">Fit Score Guide</h4>
+                    <div className="mt-6 p-4 bg-gray-700/50 rounded-xl border border-gray-600">
+                      <h4 className="font-semibold text-blue-200 mb-2">Fit Score Guide</h4>
                       <div className="space-y-2 text-sm text-left">
                         {(() => {
                           const score = analysisResult?.fitScore || 75;
                           if (score >= 85) {
                             return (
-                              <div className="flex items-center gap-2 text-green-700">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              <div className="flex items-center gap-2 text-green-300">
+                                <CheckCircle className="h-4 w-4 text-green-400" />
                                 <span><strong>85-100%:</strong> Excellent fit! This size should fit you perfectly. <strong>Buy with confidence!</strong></span>
                               </div>
                             );
                           } else if (score >= 70) {
                             return (
-                              <div className="flex items-center gap-2 text-blue-700">
-                                <CheckCircle className="h-4 w-4 text-blue-600" />
+                              <div className="flex items-center gap-2 text-blue-300">
+                                <CheckCircle className="h-4 w-4 text-blue-400" />
                                 <span><strong>70-84%:</strong> Good fit potential. This size should work well for you. <strong>Recommended to buy.</strong></span>
                               </div>
                             );
                           } else if (score >= 50) {
                             return (
-                              <div className="flex items-center gap-2 text-yellow-700">
-                                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                              <div className="flex items-center gap-2 text-yellow-300">
+                                <AlertCircle className="h-4 w-4 text-yellow-400" />
                                 <span><strong>50-69%:</strong> Moderate fit. This size may need adjustments. <strong>Consider trying on first.</strong></span>
                               </div>
                             );
                           } else {
                             return (
-                              <div className="flex items-center gap-2 text-red-700">
-                                <AlertCircle className="h-4 w-4 text-red-600" />
+                              <div className="flex items-center gap-2 text-red-300">
+                                <AlertCircle className="h-4 w-4 text-red-400" />
                                 <span><strong>0-49%:</strong> Poor fit. This size is not recommended for your measurements. <strong>Don't buy this size.</strong></span>
                               </div>
                             );
@@ -529,29 +529,29 @@ const Index = () => {
                     </div>
                     {/* Detailed Score Breakdown */}
                     <div className="mt-4 grid grid-cols-2 gap-4">
-                      <div className="bg-white/60 p-2 rounded-lg">
-                        <div className="font-semibold text-green-700">Perfect fit</div>
+                      <div className="bg-gray-700/60 p-2 rounded-lg">
+                        <div className="font-semibold text-green-300">Perfect fit</div>
                       </div>
-                      <div className="bg-white/60 p-2 rounded-lg">
-                        <div className="font-semibold text-blue-700">Good fit potential</div>
+                      <div className="bg-gray-700/60 p-2 rounded-lg">
+                        <div className="font-semibold text-blue-300">Good fit potential</div>
                       </div>
-                      <div className="bg-white/60 p-2 rounded-lg">
-                        <div className="font-semibold text-yellow-700">Moderate fit</div>
+                      <div className="bg-gray-700/60 p-2 rounded-lg">
+                        <div className="font-semibold text-yellow-300">Moderate fit</div>
                       </div>
-                      <div className="bg-white/60 p-2 rounded-lg">
-                        <div className="font-semibold text-red-700">Poor fit</div>
+                      <div className="bg-gray-700/60 p-2 rounded-lg">
+                        <div className="font-semibold text-red-300">Poor fit</div>
                       </div>
                     </div>
                   </div>
-                  <Separator className="my-6" />
+                  <Separator className="my-6 bg-gray-600" />
                   {/* Virtual Overlay */}
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-lg text-blue-700">Virtual Try-On</h4>
+                    <h4 className="font-semibold text-lg text-blue-300">Virtual Try-On</h4>
                     <div className="relative">
                       <img 
                         src={analysisResult?.overlay || userData.photo} 
                         alt="Virtual try-on" 
-                        className="w-full h-72 object-cover rounded-2xl shadow-lg border-4 border-blue-100"
+                        className="w-full h-72 object-cover rounded-2xl shadow-lg border-4 border-blue-900/50"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl" />
                       <Badge className="absolute top-3 right-3 bg-green-600 text-white px-4 py-2 rounded-full shadow-lg text-base">
@@ -559,26 +559,26 @@ const Index = () => {
                       </Badge>
                     </div>
                   </div>
-                  <Separator className="my-6" />
+                  <Separator className="my-6 bg-gray-600" />
                   {/* Recommendations */}
                   <div className="space-y-4">
-                    <div className="flex items-start gap-4 p-4 bg-green-50/80 rounded-xl shadow-inner">
-                      <CheckCircle className="h-6 w-6 text-green-600 mt-1 flex-shrink-0" />
+                    <div className="flex items-start gap-4 p-4 bg-green-900/20 rounded-xl shadow-inner border border-green-800/30">
+                      <CheckCircle className="h-6 w-6 text-green-400 mt-1 flex-shrink-0" />
                       <div>
-                        <p className="font-semibold text-green-800">Recommendation</p>
-                        <p className="text-base text-green-700">
+                        <p className="font-semibold text-green-200">Recommendation</p>
+                        <p className="text-base text-green-100">
                           {(() => {
                             const score = analysisResult?.fitScore || 75;
                             if (score >= 85) {
-                              return <span className="font-bold text-green-700">Definitely</span>;
+                              return <span className="font-bold text-green-300">Definitely</span>;
                             } else if (score >= 70) {
-                              return <span className="font-bold text-blue-700">Probably Yes</span>;
+                              return <span className="font-bold text-blue-300">Probably Yes</span>;
                             } else if (score >= 50) {
-                              return <span className="font-bold text-yellow-700">Maybe</span>;
+                              return <span className="font-bold text-yellow-300">Maybe</span>;
                             } else if (score >= 30) {
-                              return <span className="font-bold text-orange-700">Probably No</span>;
+                              return <span className="font-bold text-orange-300">Probably No</span>;
                             } else {
-                              return <span className="font-bold text-red-700">No Way</span>;
+                              return <span className="font-bold text-red-300">No Way</span>;
                             }
                           })()}
                           {' - '}{analysisResult?.recommendation || 'Fit analysis completed successfully.'}
@@ -596,9 +596,9 @@ const Index = () => {
             {/* Analysis Progress */}
             {isAnalyzing && (
             <div className="w-full max-w-2xl animate-fade-in-up mt-8">
-              <Card className="glassmorphism-card p-10 text-lg">
+              <Card className="bg-gray-800/50 border-gray-700 p-10 text-lg backdrop-blur-sm">
                 <CardHeader>
-                  <CardTitle className="text-blue-700">
+                  <CardTitle className="text-blue-300">
                     {currentStep === 1 ? "Analyzing Clothing..." : "Analyzing Fit..."}
                   </CardTitle>
                 </CardHeader>
@@ -608,7 +608,7 @@ const Index = () => {
                       value={currentStep === 1 ? analyzeProgress : photoAnalyzeProgress} 
                       className="w-full h-6 shadow-lg" 
                     />
-                    <p className="text-center text-gray-600">
+                    <p className="text-center text-gray-400">
                       {currentStep === 1 
                         ? "AI is analyzing the clothing item and extracting size information..."
                         : "AI is analyzing your body proportions and clothing fit..."
