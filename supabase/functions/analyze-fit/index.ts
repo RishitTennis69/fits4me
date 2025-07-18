@@ -78,6 +78,7 @@ serve(async (req) => {
     let bodyAssessment = '';
     let detailedMeasurements: any = null;
     let usedManualMeasurements = false;
+    let userAppearanceDescription = '';
     const bodyAnalysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -93,35 +94,7 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: `This image is of an adult (over 18) and is provided with full consent by the user for the purpose of virtual clothing fitting. 
-
-Please analyze the body proportions and estimate precise measurements for clothing fit.
-
-IMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.
-
-CRITICAL: You must estimate the person's height from the image. Look at their proportions, compare to objects in the background, or use visual cues to estimate their actual height in inches. Do NOT assume a default height.
-
-Analyze the body and provide:
-1. Body type assessment
-2. Precise measurements in inches (including estimated height from image)
-3. Fit recommendations
-
-Respond in this exact JSON format:
-{
-  "bodyType": "slim|average|full",
-  "bodyShape": "rectangular|triangle|inverted-triangle|hourglass",
-  "estimatedHeight": number,
-  "estimatedWeight": number,
-  "measurements": {
-    "chest": number,
-    "waist": number,
-    "hips": number,
-    "shoulders": number,
-    "armLength": number,
-    "inseam": number
-  },
-  "fitNotes": "string describing body proportions and fit considerations"
-}`
+                text: `This image is of an adult (over 18) and is provided with full consent by the user for the purpose of virtual clothing fitting. \n\nPlease analyze the body proportions and estimate precise measurements for clothing fit.\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.\n\nCRITICAL: You must estimate the person's height from the image. Look at their proportions, compare to objects in the background, or use visual cues to estimate their actual height in inches. Do NOT assume a default height.\n\nAnalyze the body and provide:\n1. Body type assessment\n2. Precise measurements in inches (including estimated height from image)\n3. Fit recommendations\n\nRespond in this exact JSON format:\n{\n  "bodyType": "slim|average|full",\n  "bodyShape": "rectangular|triangle|inverted-triangle|hourglass",\n  "estimatedHeight": number,\n  "estimatedWeight": number,\n  "measurements": {\n    "chest": number,\n    "waist": number,\n    "hips": number,\n    "shoulders": number,\n    "armLength": number,\n    "inseam": number\n  },\n  "fitNotes": "string describing body proportions and fit considerations"\n}`
               },
               imageContent
             ]
@@ -129,50 +102,32 @@ Respond in this exact JSON format:
         ]
       }),
     });
-
     if (!bodyAnalysisResponse.ok) {
       const errorText = await bodyAnalysisResponse.text();
       console.error('OpenAI API error details:', errorText);
       throw new Error(`OpenAI API error: ${bodyAnalysisResponse.status} - ${errorText}`);
     }
-
     const bodyAnalysis = await bodyAnalysisResponse.json();
     console.log('Full OpenAI body analysis response:', JSON.stringify(bodyAnalysis, null, 2));
-    
     let bodyContent = bodyAnalysis.choices?.[0]?.message?.content;
     if (bodyContent) {
       try {
-        // Try to parse the JSON response
         let jsonBlock = bodyContent.trim();
         if (jsonBlock.startsWith('{') && jsonBlock.endsWith('}')) {
-          try {
-            detailedMeasurements = JSON.parse(jsonBlock);
-            console.log('Successfully parsed detailed measurements:', detailedMeasurements);
-          } catch (e) {
-            console.error('Direct JSON parse failed, will try regex extraction.', e);
-          }
-        }
-        
-        // If not parsed yet, try to extract JSON block with regex
-        if (!detailedMeasurements) {
+          detailedMeasurements = JSON.parse(jsonBlock);
+          console.log('Successfully parsed detailed measurements:', detailedMeasurements);
+        } else {
           const match = jsonBlock.match(/\{[\s\S]*\}/);
           if (match) {
-            try {
-              detailedMeasurements = JSON.parse(match[0]);
-              console.log('Parsed detailed measurements from regex-extracted block.');
-            } catch (e) {
-              console.error('Regex JSON parse failed.', e);
-            }
+            detailedMeasurements = JSON.parse(match[0]);
+            console.log('Parsed detailed measurements from regex-extracted block.');
           }
         }
-        
         if (detailedMeasurements && detailedMeasurements.measurements) {
           // Use AI-estimated height and weight if available
           const estimatedHeight = detailedMeasurements.estimatedHeight || userData.height;
           const estimatedWeight = detailedMeasurements.estimatedWeight || userData.weight;
-          
           bodyAssessment = `Detailed body analysis: ${detailedMeasurements.bodyType} body type, ${detailedMeasurements.bodyShape} shape. Estimated height: ${estimatedHeight} inches, estimated weight: ${estimatedWeight} lbs. Measurements: Chest ${detailedMeasurements.measurements.chest}", Waist ${detailedMeasurements.measurements.waist}", Shoulders ${detailedMeasurements.measurements.shoulders}". ${detailedMeasurements.fitNotes}`;
-          
           // Update userData with AI estimates for consistency
           userData.height = estimatedHeight;
           userData.weight = estimatedWeight;
@@ -184,22 +139,120 @@ Respond in this exact JSON format:
         bodyAssessment = bodyContent;
       }
     }
-
     // Fallback: If OpenAI refuses or fails to analyze the body, use only manual measurements
     if (!bodyAssessment || /not able to analyze|cannot analyze|refuse|privacy protection|error|unavailable/i.test(bodyAssessment)) {
       usedManualMeasurements = true;
       bodyAssessment = `Manual fallback: User-provided measurements only. Height: ${userData.height}in, Weight: ${userData.weight}lbs, Preferred Size: ${userData.preferredSize}.`;
       console.warn('OpenAI refused or failed body analysis. Using manual measurements only.');
     }
-
     // BULLETPROOF BODY ASSESSMENT: Ensure we always have a valid body assessment
     if (!bodyAssessment || bodyAssessment.trim().length < 10) {
       bodyAssessment = `Body analysis: Height ${userData.height} inches, Weight ${userData.weight} lbs, Preferred size ${userData.preferredSize}. Standard body proportions assumed.`;
       usedManualMeasurements = true;
       console.warn('Body assessment was invalid, using fallback.');
     }
-
     console.log('Body analysis:', bodyAssessment);
+
+    // 1b. Get a detailed user appearance description for DALL-E
+    // This is a new GPT-4o-mini call
+    const appearanceDescriptionResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 500,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `This image is of an adult (over 18) and is provided with full consent by the user for the purpose of virtual clothing fitting.\n\nDescribe the person's appearance in vivid, visual detail for the purpose of AI image generation. Include: face shape, skin tone, hair color and style, eye color, body type, body shape, and any other visible features.\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.\n\nRespond in this exact JSON format:\n{\n  "face": "string (face shape, features, expression)",\n  "skinTone": "string (detailed skin tone)",\n  "hair": "string (color, length, style)",\n  "eyes": "string (color, shape)",\n  "body": "string (type, shape, build)",\n  "other": "string (any other visible features)"\n}`
+              },
+              imageContent
+            ]
+          }
+        ]
+      }),
+    });
+    if (appearanceDescriptionResponse.ok) {
+      const appearanceData = await appearanceDescriptionResponse.json();
+      const appearanceContent = appearanceData.choices?.[0]?.message?.content;
+      if (appearanceContent) {
+        try {
+          const appearanceJson = JSON.parse(appearanceContent);
+          userAppearanceDescription = `A person with ${appearanceJson.face}, ${appearanceJson.skinTone} skin, ${appearanceJson.hair} hair, ${appearanceJson.eyes} eyes, and a ${appearanceJson.body}. ${appearanceJson.other}`;
+        } catch (e) {
+          userAppearanceDescription = '';
+        }
+      }
+    }
+
+    // 2. AI Fit Scores: Ask AI for both individual and overall fit scores in JSON
+    const fitScorePrompt = `You are a virtual clothing fit expert. Given the user's body measurements and the following clothing items, analyze the fit and provide:\n1. An overall fit score (0-100, higher is better)\n2. An individual fit score (0-100) for each item, with a brief reason\n3. A recommendation for each item (e.g., fits well, too tight, too loose, consider another size)\n4. A comprehensive JSON response with this structure:\n{\n  "overallFitScore": number,\n  "individualScores": [\n    {\n      "itemName": string,\n      "fitScore": number,\n      "reason": string,\n      "recommendation": string\n    }\n  ]\n}\nRespond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.`;
+    const fitScoreAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        max_tokens: 1500,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: fitScorePrompt },
+              { type: 'text', text: `User measurements: ${JSON.stringify(detailedMeasurements?.measurements || userData)}\nClothing items: ${JSON.stringify(itemsToAnalyze)}` }
+            ]
+          }
+        ]
+      }),
+    });
+    if (!fitScoreAIResponse.ok) {
+      const errorText = await fitScoreAIResponse.text();
+      console.error('OpenAI fit score API error details:', errorText);
+      throw new Error(`OpenAI fit score API error: ${fitScoreAIResponse.status} - ${errorText}`);
+    }
+    const fitScoreAIData = await fitScoreAIResponse.json();
+    let fitScoreAIContent = fitScoreAIData.choices?.[0]?.message?.content;
+    let aiFitScores = null;
+    if (fitScoreAIContent) {
+      try {
+        let jsonBlock = fitScoreAIContent.trim();
+        if (jsonBlock.startsWith('{') && jsonBlock.endsWith('}')) {
+          aiFitScores = JSON.parse(jsonBlock);
+        } else {
+          const match = jsonBlock.match(/\{[\s\S]*\}/);
+          if (match) {
+            aiFitScores = JSON.parse(match[0]);
+          }
+        }
+        console.log('AI fit scores:', aiFitScores);
+      } catch (e) {
+        console.error('Failed to parse AI fit scores JSON:', e);
+      }
+    }
+    // Use AI's fit scores if available
+    let overallFitScore = 0;
+    let individualScores: Array<{
+      itemName: string;
+      fitScore: number;
+      reason: string;
+      recommendation: string;
+    }> = [];
+    if (aiFitScores && typeof aiFitScores === 'object' && aiFitScores !== null) {
+      if (typeof (aiFitScores as any).overallFitScore === 'number') {
+        overallFitScore = (aiFitScores as any).overallFitScore;
+      }
+      if (Array.isArray((aiFitScores as any).individualScores)) {
+        individualScores = (aiFitScores as any).individualScores;
+      }
+    }
 
     // 2. AI Clothing Analysis: Analyze all clothing items in detail for virtual try-on
     let allClothingDescriptions: string[] = [];
@@ -330,309 +383,36 @@ Respond in this exact JSON format:
     const clothingStyleAnalysis = isMultiItem ? combinedStyleAnalysis : allClothingStyleAnalyses[0];
 
     // 3. PRECISE SIZE ANALYSIS: Compare user measurements with specific requested sizes for each item
-    console.log('=== PRECISE SIZE ANALYSIS ===');
-    console.log('User data:', userData);
-    console.log('Items to analyze:', itemsToAnalyze);
-    
-    let individualScores: any[] = [];
-    let overallFitScore = 0;
-    let overallMeasurementComparison = '';
-    let overallFitDetails = '';
-    let overallSizeAdvice = '';
-    let overallRecommendation = '';
-    
-    // Analyze each item individually
-    for (let i = 0; i < itemsToAnalyze.length; i++) {
-      const item = itemsToAnalyze[i];
-      const selectedSize = item.selectedSize || userData.preferredSize;
-      console.log(`Analyzing item ${i + 1}: ${item.name} in size ${selectedSize}`);
-      
-      // Get the specific size dimensions for the requested size
-      const requestedSizeDimensions = item.sizeChart?.[selectedSize];
-      console.log(`Size dimensions for ${selectedSize}:`, requestedSizeDimensions);
-      
-      // Calculate precise fit score based on actual measurements
-      let preciseFitScore = 50; // Base score
-      let measurementComparison = '';
-      let fitDetails = '';
-      let sizeAdvice = '';
-      let alternativeSize = null;
-      let recommendation = '';
-      
-      if (requestedSizeDimensions && detailedMeasurements?.measurements) {
-        console.log(`=== MEASUREMENT COMPARISON FOR ITEM ${i + 1} ===`);
-        const userMeasurements = detailedMeasurements.measurements;
-        const sizeMeasurements = requestedSizeDimensions;
-        
-        let totalDifference = 0;
-        let measurementCount = 0;
-        let comparisonDetails: string[] = [];
-        
-        // Compare each measurement
-        if (sizeMeasurements.chest && userMeasurements.chest) {
-          const chestDiff = Math.abs(parseFloat(sizeMeasurements.chest) - userMeasurements.chest);
-          totalDifference += chestDiff;
-          measurementCount++;
-          comparisonDetails.push(`Chest: User ${userMeasurements.chest}" vs Size ${sizeMeasurements.chest}" (diff: ${chestDiff.toFixed(1)}")`);
-          
-          if (chestDiff <= 1) preciseFitScore += 15;
-          else if (chestDiff <= 2) preciseFitScore += 10;
-          else if (chestDiff <= 3) preciseFitScore += 5;
-          else preciseFitScore -= 10;
-        }
-        
-        if (sizeMeasurements.waist && userMeasurements.waist) {
-          const waistDiff = Math.abs(parseFloat(sizeMeasurements.waist) - userMeasurements.waist);
-          totalDifference += waistDiff;
-          measurementCount++;
-          comparisonDetails.push(`Waist: User ${userMeasurements.waist}" vs Size ${sizeMeasurements.waist}" (diff: ${waistDiff.toFixed(1)}")`);
-          
-          if (waistDiff <= 1) preciseFitScore += 15;
-          else if (waistDiff <= 2) preciseFitScore += 10;
-          else if (waistDiff <= 3) preciseFitScore += 5;
-          else preciseFitScore -= 10;
-        }
-        
-        if (sizeMeasurements.hips && userMeasurements.hips) {
-          const hipsDiff = Math.abs(parseFloat(sizeMeasurements.hips) - userMeasurements.hips);
-          totalDifference += hipsDiff;
-          measurementCount++;
-          comparisonDetails.push(`Hips: User ${userMeasurements.hips}" vs Size ${sizeMeasurements.hips}" (diff: ${hipsDiff.toFixed(1)}")`);
-          
-          if (hipsDiff <= 1) preciseFitScore += 10;
-          else if (hipsDiff <= 2) preciseFitScore += 7;
-          else if (hipsDiff <= 3) preciseFitScore += 3;
-          else preciseFitScore -= 8;
-        }
-        
-        if (sizeMeasurements.shoulders && userMeasurements.shoulders) {
-          const shouldersDiff = Math.abs(parseFloat(sizeMeasurements.shoulders) - userMeasurements.shoulders);
-          totalDifference += shouldersDiff;
-          measurementCount++;
-          comparisonDetails.push(`Shoulders: User ${userMeasurements.shoulders}" vs Size ${sizeMeasurements.shoulders}" (diff: ${shouldersDiff.toFixed(1)}")`);
-          
-          if (shouldersDiff <= 0.5) preciseFitScore += 10;
-          else if (shouldersDiff <= 1) preciseFitScore += 7;
-          else if (shouldersDiff <= 1.5) preciseFitScore += 3;
-          else preciseFitScore -= 8;
-        }
-        
-        // Calculate average difference
-        const averageDifference = measurementCount > 0 ? totalDifference / measurementCount : 0;
-        console.log(`Average measurement difference for item ${i + 1}:`, averageDifference);
-        
-        // Adjust score based on average difference
-        if (averageDifference <= 1) preciseFitScore += 20;
-        else if (averageDifference <= 2) preciseFitScore += 10;
-        else if (averageDifference <= 3) preciseFitScore += 5;
-        else preciseFitScore -= 15;
-        
-        // Create detailed comparison text
-        measurementComparison = `Measurement Analysis: ${comparisonDetails.join('; ')}. Average difference: ${averageDifference.toFixed(1)} inches.`;
-        
-        // Determine fit details based on measurements
-        if (averageDifference <= 1) {
-          fitDetails = `This size ${selectedSize} should fit you very well. The measurements align closely with your body proportions.`;
-          sizeAdvice = `Size ${selectedSize} is recommended for your measurements.`;
-          recommendation = `Excellent fit! Size ${selectedSize} matches your measurements very well.`;
-        } else if (averageDifference <= 2) {
-          fitDetails = `Size ${selectedSize} should fit reasonably well with minor adjustments.`;
-          sizeAdvice = `Size ${selectedSize} should work, but consider trying one size ${averageDifference > 1.5 ? 'smaller' : 'larger'} if available.`;
-          recommendation = `Good fit potential. Size ${selectedSize} should work well for your body type.`;
-        } else if (averageDifference <= 3) {
-          fitDetails = `Size ${selectedSize} may be ${averageDifference > 2.5 ? 'too large' : 'too small'} for your measurements.`;
-          sizeAdvice = `Consider trying a different size. Size ${selectedSize} may not be optimal.`;
-          recommendation = `Moderate fit. Size ${selectedSize} might not be the best choice for your measurements.`;
-          // Suggest alternative size
-          if (item.sizes && item.sizes.length > 1) {
-            const currentIndex = item.sizes.indexOf(selectedSize);
-            if (currentIndex > 0 && averageDifference > 2.5) {
-              alternativeSize = item.sizes[currentIndex - 1]; // Try smaller
-            } else if (currentIndex < item.sizes.length - 1 && averageDifference <= 2.5) {
-              alternativeSize = item.sizes[currentIndex + 1]; // Try larger
-            }
-          }
-        } else {
-          fitDetails = `Size ${selectedSize} is significantly ${averageDifference > 3.5 ? 'too large' : 'too small'} for your measurements.`;
-          sizeAdvice = `This size is not recommended for your body type. Consider a different size or item.`;
-          recommendation = `Poor fit. Size ${selectedSize} is not suitable for your measurements.`;
-          preciseFitScore = Math.max(0, preciseFitScore - 30); // Heavy penalty for poor fit
-        }
-        
-      } else {
-        console.log(`No size chart data available for item ${i + 1}, using fallback analysis`);
-        measurementComparison = "Size chart data not available for precise measurement comparison.";
-        fitDetails = `Based on your body type and the available sizes, this item should work well for your proportions.`;
-        sizeAdvice = `Size ${selectedSize} appears suitable for your body type.`;
-        recommendation = `Size ${selectedSize} should be a good fit based on your body proportions.`;
-        preciseFitScore = 50; // Neutral score when no data
-      }
-      
-      // Clamp score to 0-100
-      preciseFitScore = Math.max(0, Math.min(100, Math.round(preciseFitScore)));
-      
-      // Add to individual scores
-      individualScores.push({
-        itemId: item.id,
-        itemName: item.name,
-        selectedSize: selectedSize,
-        fitScore: preciseFitScore,
-        recommendation: recommendation,
-        sizeAdvice: sizeAdvice,
-        alternativeSize: alternativeSize,
-        fitDetails: fitDetails,
-        measurementComparison: measurementComparison
-      });
-      
-      // Add to overall score
-      overallFitScore += preciseFitScore;
-    }
-    
-    // Calculate average overall fit score
-    overallFitScore = Math.round(overallFitScore / itemsToAnalyze.length);
-    
-    // Create overall analysis summary
-    if (isMultiItem && itemsToAnalyze.length > 1) {
-      const bestItem = individualScores.reduce((best, current) => 
-        current.fitScore > best.fitScore ? current : best
-      );
-      const worstItem = individualScores.reduce((worst, current) => 
-        current.fitScore < worst.fitScore ? current : worst
-      );
-      
-      overallMeasurementComparison = `Overall analysis of ${itemsToAnalyze.length} items. Best fit: ${bestItem.itemName} (${bestItem.fitScore}%), Worst fit: ${worstItem.itemName} (${worstItem.fitScore}%).`;
-      
-      if (overallFitScore >= 80) {
-        overallFitDetails = `Excellent outfit combination! All items work well together and should fit you very well.`;
-        overallSizeAdvice = `Your size selections are optimal. Consider this a complete outfit.`;
-        overallRecommendation = `Perfect outfit! All items complement each other and should fit excellently.`;
-      } else if (overallFitScore >= 70) {
-        overallFitDetails = `Good outfit combination. Most items should fit well with minor adjustments.`;
-        overallSizeAdvice = `Most sizes are good, but consider adjusting ${worstItem.itemName} to size ${worstItem.alternativeSize || 'a different size'}.`;
-        overallRecommendation = `Great outfit! Most items will fit well, with room for minor improvements.`;
-      } else if (overallFitScore >= 60) {
-        overallFitDetails = `Moderate outfit combination. Some items may need size adjustments.`;
-        overallSizeAdvice = `Consider trying different sizes for ${worstItem.itemName} and potentially other items.`;
-        overallRecommendation = `Decent outfit potential. Some items may need size changes for optimal fit.`;
-      } else {
-        overallFitDetails = `Poor outfit combination. Multiple items may not fit well.`;
-        overallSizeAdvice = `Consider different sizes or alternative items for better fit.`;
-        overallRecommendation = `This outfit may not work well. Consider different items or sizes.`;
-      }
-    } else {
-      // Single item mode - use the individual analysis
-      const singleItem = individualScores[0];
-      overallFitScore = singleItem.fitScore;
-      overallMeasurementComparison = singleItem.measurementComparison;
-      overallFitDetails = singleItem.fitDetails;
-      overallSizeAdvice = singleItem.sizeAdvice;
-      overallRecommendation = singleItem.recommendation;
-    }
-    
-    console.log('=== FIT ANALYSIS RESULTS ===');
-    console.log('Overall fit score:', overallFitScore);
-    console.log('Individual scores:', individualScores);
-    console.log('Overall measurement comparison:', overallMeasurementComparison);
-    console.log('Overall fit details:', overallFitDetails);
-    console.log('Overall size advice:', overallSizeAdvice);
-    console.log('Overall recommendation:', overallRecommendation);
+    // (Removed manual measurement comparison and preciseFitScore calculation. Relying only on AI fit scores.)
 
     // Create the analysis result object
     const analysisResult = {
       fitScore: overallFitScore,
-      recommendation: overallRecommendation,
-      sizeAdvice: overallSizeAdvice,
-      alternativeSize: null, // Will be handled per item
-      fitDetails: overallFitDetails,
+      recommendation: individualScores.map(s => s.recommendation).join(' | '),
+      sizeAdvice: individualScores.map(s => s.reason).join(' | '),
+      alternativeSize: null, // Not provided by AI
+      fitDetails: individualScores.map(s => `${s.itemName}: ${s.reason}`).join(' | '),
       brandComparison: "Size comparison data not available.",
-      measurementComparison: overallMeasurementComparison
+      measurementComparison: '', // Not calculated
+      // preciseFitResults removed
     };
 
     console.log('Final analysis result:', analysisResult);
-
-    // === NEW: Extract user appearance features from photo ===
-    let userAppearance = {
-      skinTone: '',
-      hairColor: '',
-      hairStyle: '',
-      genderPresentation: '',
-      ageGroup: '',
-      distinguishingFeatures: ''
-    };
-    try {
-      const appearanceResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          max_tokens: 500,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: `Analyze this photo and provide the following user appearance details in valid JSON:\n{\n  "skinTone": "e.g. light, medium, dark, olive, etc.",\n  "hairColor": "e.g. black, brown, blonde, red, gray, etc.",\n  "hairStyle": "e.g. short, long, curly, straight, etc.",\n  "genderPresentation": "e.g. male, female, non-binary, etc.",\n  "ageGroup": "e.g. child, teen, young adult, adult, senior",\n  "distinguishingFeatures": "e.g. glasses, beard, freckles, etc."\n}\nRespond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.`
-                },
-                imageContent
-              ]
-            }
-          ]
-        }),
-      });
-      if (appearanceResponse.ok) {
-        const appearanceData = await appearanceResponse.json();
-        const appearanceContent = appearanceData.choices?.[0]?.message?.content;
-        if (appearanceContent) {
-          try {
-            let jsonBlock = appearanceContent.trim();
-            if (jsonBlock.startsWith('{') && jsonBlock.endsWith('}')) {
-              userAppearance = JSON.parse(jsonBlock);
-            } else {
-              const match = jsonBlock.match(/\{[\s\S]*\}/);
-              if (match) {
-                userAppearance = JSON.parse(match[0]);
-              }
-            }
-            console.log('Extracted user appearance:', userAppearance);
-          } catch (e) {
-            console.error('Failed to parse appearance JSON:', e);
-          }
-        }
-      } else {
-        const errorText = await appearanceResponse.text();
-        console.warn('OpenAI appearance extraction failed:', errorText);
-      }
-    } catch (appearanceError) {
-      console.error('Error extracting user appearance:', appearanceError);
-    }
 
     // 4. DALL-E 3: Generate virtual try-on image for outfit
     console.log('Starting virtual try-on image generation for outfit...');
     
     let clothingImagePrompt = '';
-    let appearanceDetails = '';
-    if (userAppearance) {
-      appearanceDetails = `${userAppearance.genderPresentation ? `A ${userAppearance.genderPresentation}` : 'A person'}${userAppearance.ageGroup ? `, ${userAppearance.ageGroup}` : ''}${userAppearance.skinTone ? `, with ${userAppearance.skinTone} skin` : ''}${userAppearance.hairColor ? `, ${userAppearance.hairColor} hair` : ''}${userAppearance.hairStyle ? `, ${userAppearance.hairStyle} hair style` : ''}${userAppearance.distinguishingFeatures ? `, ${userAppearance.distinguishingFeatures}` : ''}`;
-    }
-    
     if (isMultiItem && itemsToAnalyze.length > 1) {
-      // Multi-item outfit prompt (mannequin style)
+      // Multi-item outfit prompt (user appearance)
       const outfitDescription = itemsToAnalyze.map((item, index) => 
         `${item.name} in size ${item.selectedSize || userData.preferredSize}`
       ).join(' and ');
-      clothingImagePrompt = `A neutral mannequin (no face, no hair, no skin details) wearing the following clothing items together: ${outfitDescription}. The mannequin should display all items clearly, with each item visible and layered as they would be worn. The clothing should match these descriptions: ${combinedClothingDescription}. ${combinedColors ? `The outfit colors include: ${combinedColors}.` : ''} ${combinedTextLogos ? `The outfit includes these details: ${combinedTextLogos}.` : ''} Plain white background. No text, no logos, no visible brand names except as described. This is an AI-generated image for a virtual try-on.`;
+      clothingImagePrompt = `A realistic, full-body image of ${userAppearanceDescription}, wearing the following clothing items together: ${outfitDescription}. The clothing should match these descriptions: ${combinedClothingDescription}. ${combinedColors ? `The outfit colors include: ${combinedColors}.` : ''} ${combinedTextLogos ? `The outfit includes these details: ${combinedTextLogos}.` : ''} The person should be standing in a neutral pose, clearly displaying all items as they would be worn. Plain white background. No text, no logos, no visible brand names except as described. This is an AI-generated image for a virtual try-on.`;
     } else {
-      // Single item prompt (mannequin style)
+      // Single item prompt (user appearance)
       const singleItem = itemsToAnalyze[0];
-      if (singleItem.images && singleItem.images.length > 0) {
-        clothingImagePrompt = `A neutral mannequin (no face, no hair, no skin details) wearing ${singleItem.name} in size ${singleItem.selectedSize || userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${extractedColor ? `The most important detail is the color: ${extractedColor}.` : ''} ${extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : ''} The mannequin should display the item clearly. Plain white background. No text, no logos, no visible brand names except as described. This is an AI-generated image for a virtual try-on.`;
-      } else {
-        clothingImagePrompt = `A neutral mannequin (no face, no hair, no skin details) wearing ${singleItem.name} in size ${singleItem.selectedSize || userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. The mannequin should display the item clearly. Plain white background. No text, no logos, no visible brand names except as described. This is an AI-generated image for a virtual try-on.`;
-      }
+      clothingImagePrompt = `A realistic, full-body image of ${userAppearanceDescription}, wearing ${singleItem.name} in size ${singleItem.selectedSize || userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${extractedColor ? `The most important detail is the color: ${extractedColor}.` : ''} ${extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : ''} The person should be standing in a neutral pose, clearly displaying the item. Plain white background. No text, no logos, no visible brand names except as described. This is an AI-generated image for a virtual try-on.`;
     }
 
     // 3. DALL-E 3: Generate virtual try-on image
@@ -685,7 +465,7 @@ Respond in this exact JSON format:
       // Multi-item response structure
       overallFitScore: overallFitScore,
       individualScores: individualScores,
-      outfitRecommendation: overallRecommendation,
+      outfitRecommendation: individualScores.map(s => s.recommendation).join(' | '),
       outfitCompatibility: {
         colorHarmony: Math.floor(Math.random() * 30) + 70, // Placeholder for now
         styleCohesion: Math.floor(Math.random() * 30) + 70, // Placeholder for now
