@@ -620,19 +620,18 @@ Respond in this exact JSON format:
     }
     
     if (isMultiItem && itemsToAnalyze.length > 1) {
-      // Multi-item outfit prompt
+      // Multi-item outfit prompt (mannequin style)
       const outfitDescription = itemsToAnalyze.map((item, index) => 
         `${item.name} in size ${item.selectedSize || userData.preferredSize}`
-      ).join(' with ');
-      
-      clothingImagePrompt = `A photorealistic image of ${appearanceDetails} wearing a complete outfit: ${outfitDescription}. The outfit should match these descriptions: ${combinedClothingDescription}. ${combinedColors ? `The outfit colors include: ${combinedColors}.` : ''} ${combinedTextLogos ? `The outfit includes these details: ${combinedTextLogos}.` : ''} The fit should be realistic for the given sizes and body proportions. The person should have a natural, confident pose. Neutral background. No text, no logos, no visible brand names except as described. This is an AI-generated image showing a complete outfit combination.`;
+      ).join(' and ');
+      clothingImagePrompt = `A neutral mannequin (no face, no hair, no skin details) wearing the following clothing items together: ${outfitDescription}. The mannequin should display all items clearly, with each item visible and layered as they would be worn. The clothing should match these descriptions: ${combinedClothingDescription}. ${combinedColors ? `The outfit colors include: ${combinedColors}.` : ''} ${combinedTextLogos ? `The outfit includes these details: ${combinedTextLogos}.` : ''} Plain white background. No text, no logos, no visible brand names except as described. This is an AI-generated image for a virtual try-on.`;
     } else {
-      // Single item prompt (backward compatibility)
+      // Single item prompt (mannequin style)
       const singleItem = itemsToAnalyze[0];
       if (singleItem.images && singleItem.images.length > 0) {
-        clothingImagePrompt = `A photorealistic image of ${appearanceDetails}. The person is wearing ${singleItem.name} in size ${singleItem.selectedSize || userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${extractedColor ? `The most important detail is the color: ${extractedColor}.` : ''} ${extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : ''} The fit should be realistic for the given size and body proportions. The clothing should look as close as possible to the product image: ${singleItem.images[0]}. The person should have a natural, confident pose. Neutral background. No text, no logos, no visible brand names except as described. This is an AI-generated image, not a mannequin.`;
+        clothingImagePrompt = `A neutral mannequin (no face, no hair, no skin details) wearing ${singleItem.name} in size ${singleItem.selectedSize || userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${extractedColor ? `The most important detail is the color: ${extractedColor}.` : ''} ${extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : ''} The mannequin should display the item clearly. Plain white background. No text, no logos, no visible brand names except as described. This is an AI-generated image for a virtual try-on.`;
       } else {
-        clothingImagePrompt = `A photorealistic image of ${appearanceDetails}. The person is wearing ${singleItem.name} in size ${singleItem.selectedSize || userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. The fit should be realistic for the given size and body proportions. The person should have a natural, confident pose. Neutral background. No text, no logos, no visible brand names except as described. This is an AI-generated image, not a mannequin.`;
+        clothingImagePrompt = `A neutral mannequin (no face, no hair, no skin details) wearing ${singleItem.name} in size ${singleItem.selectedSize || userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. The mannequin should display the item clearly. Plain white background. No text, no logos, no visible brand names except as described. This is an AI-generated image for a virtual try-on.`;
       }
     }
 
