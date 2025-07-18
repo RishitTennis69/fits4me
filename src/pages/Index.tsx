@@ -458,6 +458,57 @@ const Index = () => {
                     </div>
                     <p className="text-base text-gray-600">Fit Score</p>
                     <Progress value={analysisResult?.fitScore || 75} className="mt-3 h-5" />
+                    {/* Fit Score Guide */}
+                    <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200">
+                      <h4 className="font-semibold text-blue-800 mb-2">Fit Score Guide</h4>
+                      <div className="space-y-2 text-sm text-left">
+                        {(() => {
+                          const score = analysisResult?.fitScore || 75;
+                          if (score >= 85) {
+                            return (
+                              <div className="flex items-center gap-2 text-green-700">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <span><strong>85-100%:</strong> Excellent fit! This size should fit you perfectly. <strong>Buy with confidence!</strong></span>
+                              </div>
+                            );
+                          } else if (score >= 70) {
+                            return (
+                              <div className="flex items-center gap-2 text-blue-700">
+                                <CheckCircle className="h-4 w-4 text-blue-600" />
+                                <span><strong>70-84%:</strong> Good fit potential. This size should work well for you. <strong>Recommended to buy.</strong></span>
+                              </div>
+                            );
+                          } else if (score >= 50) {
+                            return (
+                              <div className="flex items-center gap-2 text-yellow-700">
+                                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                <span><strong>50-69%:</strong> Moderate fit. This size may need adjustments. <strong>Consider trying on first.</strong></span>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div className="flex items-center gap-2 text-red-700">
+                                <AlertCircle className="h-4 w-4 text-red-600" />
+                                <span><strong>0-49%:</strong> Poor fit. This size is not recommended for your measurements. <strong>Don't buy this size.</strong></span>
+                              </div>
+                            );
+                          }
+                        })()}
+                      </div>
+                    </div>
+                  {/* Detailed Score Breakdown */}
+                  <div className="mt-4id grid-cols-2                   <div className="bg-white/60 p-2 rounded-lg">
+                          <div className="font-semibold text-green-70                   <div className="text-gray-600>Perfect fit</div>
+                        </div>
+                        <div className="bg-white/60 p-2 rounded-lg">
+                          <div className="font-semibold text-blue-700                   <div className="text-gray-600                   </div>
+                        <div className="bg-white/60 p-2 rounded-lg">
+                          <div className="font-semibold text-yellow-700                   <div className="text-gray-60>Moderate fit</div>
+                        </div>
+                        <div className="bg-white/60 p-2 rounded-lg">
+                          <div className="font-semibold text-red-700                   <div className="text-gray-600                   </div>
+                      </div>
+                    </div>
                   </div>
                   <Separator className="my-6" />
                   {/* Virtual Overlay */}

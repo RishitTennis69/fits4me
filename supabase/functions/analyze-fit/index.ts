@@ -423,13 +423,76 @@ Respond in this exact JSON format:
 
     console.log('Final analysis result:', analysisResult);
 
-    // 0. Real Person Overlay: Generate a photorealistic image of a real person with user's proportions
+    // === NEW: Extract user appearance features from photo ===
+    let userAppearance = {
+      skinTone: '',
+      hairColor: '',
+      hairStyle: '',
+      genderPresentation: '',
+      ageGroup: '',
+      distinguishingFeatures: ''
+    };
+    try {
+      const appearanceResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          max_tokens: 500,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: `Analyze this photo and provide the following user appearance details in valid JSON:\n{\n  "skinTone": "e.g. light, medium, dark, olive, etc.",\n  "hairColor": "e.g. black, brown, blonde, red, gray, etc.",\n  "hairStyle": "e.g. short, long, curly, straight, etc.",\n  "genderPresentation": "e.g. male, female, non-binary, etc.",\n  "ageGroup": "e.g. child, teen, young adult, adult, senior",\n  "distinguishingFeatures": "e.g. glasses, beard, freckles, etc."\n}\nRespond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.`
+                },
+                imageContent
+              ]
+            }
+          ]
+        }),
+      });
+      if (appearanceResponse.ok) {
+        const appearanceData = await appearanceResponse.json();
+        const appearanceContent = appearanceData.choices?.[0]?.message?.content;
+        if (appearanceContent) {
+          try {
+            let jsonBlock = appearanceContent.trim();
+            if (jsonBlock.startsWith('{') && jsonBlock.endsWith('}')) {
+              userAppearance = JSON.parse(jsonBlock);
+            } else {
+              const match = jsonBlock.match(/\{[\s\S]*\}/);
+              if (match) {
+                userAppearance = JSON.parse(match[0]);
+              }
+            }
+            console.log('Extracted user appearance:', userAppearance);
+          } catch (e) {
+            console.error('Failed to parse appearance JSON:', e);
+          }
+        }
+      } else {
+        const errorText = await appearanceResponse.text();
+        console.warn('OpenAI appearance extraction failed:', errorText);
+      }
+    } catch (appearanceError) {
+      console.error('Error extracting user appearance:', appearanceError);
+    }
+
+    // 0. Real Person Overlay: Generate a photorealistic image of a real person with user's proportions and appearance
     let clothingImagePrompt = '';
+    let appearanceDetails = '';
+    if (userAppearance) {
+      appearanceDetails = `${userAppearance.genderPresentation ? `A ${userAppearance.genderPresentation}` : 'A person'}${userAppearance.ageGroup ? `, ${userAppearance.ageGroup}` : ''}${userAppearance.skinTone ? `, with ${userAppearance.skinTone} skin` : ''}${userAppearance.hairColor ? `, ${userAppearance.hairColor} hair` : ''}${userAppearance.hairStyle ? `, ${userAppearance.hairStyle} hair style` : ''}${userAppearance.distinguishingFeatures ? `, ${userAppearance.distinguishingFeatures}` : ''}`;
+    }
     if (clothingData.images && clothingData.images.length > 0) {
-      clothingImagePrompt = `A photorealistic image of a real person with the following body proportions: height: ${userData.height} inches, weight: ${userData.weight} lbs, chest: ${detailedMeasurements?.measurements?.chest || '?'}", waist: ${detailedMeasurements?.measurements?.waist || '?'}", hips: ${detailedMeasurements?.measurements?.hips || '?'}", shoulders: ${detailedMeasurements?.measurements?.shoulders || '?'}". The person is wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${extractedColor ? `The most important detail is the color: ${extractedColor}.` : ''} ${extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : ''} The fit should be realistic for the given size and body. The clothing should look as close as possible to the product image: ${clothingData.images[0]}. Neutral background. No text, no logos, no visible brand names except as described. This is an AI-generated image, not a mannequin.`;
+      clothingImagePrompt = `A photorealistic image of ${appearanceDetails}. Body proportions: height: ${userData.height} inches, weight: ${userData.weight} lbs, chest: ${detailedMeasurements?.measurements?.chest || '?'}\", waist: ${detailedMeasurements?.measurements?.waist || '?'}\", hips: ${detailedMeasurements?.measurements?.hips || '?'}\", shoulders: ${detailedMeasurements?.measurements?.shoulders || '?'}\". The person is wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. ${extractedColor ? `The most important detail is the color: ${extractedColor}.` : ''} ${extractedTextLogo ? `The clothing must include the following text/logo/number: ${extractedTextLogo}.` : ''} The fit should be realistic for the given size and body. The clothing should look as close as possible to the product image: ${clothingData.images[0]}. Neutral background. No text, no logos, no visible brand names except as described. This is an AI-generated image, not a mannequin.`;
     } else {
-      console.warn('No product image available for overlay. Using fallback prompt.');
-      clothingImagePrompt = `A photorealistic image of a real person with the following body proportions: height: ${userData.height} inches, weight: ${userData.weight} lbs, chest: ${detailedMeasurements?.measurements?.chest || '?'}", waist: ${detailedMeasurements?.measurements?.waist || '?'}", hips: ${detailedMeasurements?.measurements?.hips || '?'}", shoulders: ${detailedMeasurements?.measurements?.shoulders || '?'}". The person is wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. The fit should be realistic for the given size and body. Neutral background. No text, no logos, no visible brand names except as described. This is an AI-generated image, not a mannequin.`;
+      clothingImagePrompt = `A photorealistic image of ${appearanceDetails}. Body proportions: height: ${userData.height} inches, weight: ${userData.weight} lbs, chest: ${detailedMeasurements?.measurements?.chest || '?'}\", waist: ${detailedMeasurements?.measurements?.waist || '?'}\", hips: ${detailedMeasurements?.measurements?.hips || '?'}\", shoulders: ${detailedMeasurements?.measurements?.shoulders || '?'}\". The person is wearing ${clothingData.name} in size ${userData.preferredSize}. The clothing should match this description: ${detailedClothingDescription}. The fit should be realistic for the given size and body. Neutral background. No text, no logos, no visible brand names except as described. This is an AI-generated image, not a mannequin.`;
     }
 
     // 3. DALL-E 3: Generate virtual try-on image
