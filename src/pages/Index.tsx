@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,8 @@ const Index = () => {
   const { toast } = useToast();
   const [clothingUrl, setClothingUrl] = useState('');
   const [clothingData, setClothingData] = useState<ClothingData | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [hasStoredPhoto, setHasStoredPhoto] = useState(false);
   // Store height in inches and weight in pounds
   const [userData, setUserData] = useState<UserData>({
     photo: '',
@@ -57,8 +59,39 @@ const Index = () => {
   const [photoAnalyzeProgress, setPhotoAnalyzeProgress] = useState(0);
   const photoAnalyzeProgressRef = React.useRef<number>(0);
   const photoAnalyzeIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [showResults, setShowResults] = useState(false);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const cameraInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Check for authenticated user and stored photo
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        // Check if user has a stored photo in localStorage
+        const storedPhoto = localStorage.getItem(`user_photo_${user.id}`);
+        if (storedPhoto) {
+          setHasStoredPhoto(true);
+          setUserData(prev => ({ ...prev, photo: storedPhoto }));
+        }
+      }
+    };
+    
+    checkUser();
+  }, []);
+
+  const saveUserPhoto = async (photoUrl: string) => {
+    if (!user) return;
+    
+    try {
+      // Save to localStorage for now
+      localStorage.setItem(`user_photo_${user.id}`, photoUrl);
+      setHasStoredPhoto(true);
+    } catch (error) {
+      console.error('Error saving user photo:', error);
+    }
+  };
 
   const handleUrlSubmit = async () => {
     if (!clothingUrl) {
@@ -144,8 +177,15 @@ const Index = () => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setUserData(prev => ({ ...prev, photo: e.target?.result as string }));
+      reader.onload = async (e) => {
+        const photoUrl = e.target?.result as string;
+        setUserData(prev => ({ ...prev, photo: photoUrl }));
+        
+        // Save photo for authenticated users
+        if (user) {
+          await saveUserPhoto(photoUrl);
+        }
+        
         // Move to step 2 (photo upload) after photo upload
         setTimeout(() => {
           setCurrentStep(2); // This is now step 2 in the UI
@@ -155,24 +195,17 @@ const Index = () => {
     }
   };
 
-  const handleAnalyze = async () => {
-    if (!userData.photo || !clothingData) {
+  const handleQuickAnalyze = async () => {
+    if (!clothingUrl || !hasStoredPhoto) {
       toast({
         title: "Missing Information",
-        description: "Please upload a photo and select clothing first.",
+        description: "Please enter a clothing URL and ensure you have a stored photo.",
         variant: "destructive"
       });
       return;
     }
 
     setIsAnalyzing(true);
-    setPhotoAnalyzeProgress(5); // Start progress
-    photoAnalyzeProgressRef.current = 5;
-    if (photoAnalyzeIntervalRef.current) clearInterval(photoAnalyzeIntervalRef.current);
-    photoAnalyzeIntervalRef.current = setInterval(() => {
-      photoAnalyzeProgressRef.current = Math.min(photoAnalyzeProgressRef.current + Math.random() * 0.3 + 0.1, 92);
-      setPhotoAnalyzeProgress(photoAnalyzeProgressRef.current);
-    }, 200); // Slower than step 1 for ~5 seconds duration
     
     try {
       // Call Supabase edge function for AI fit analysis
@@ -200,26 +233,13 @@ const Index = () => {
         overlay: data.overlay || userData.photo // Use the generated overlay image
       });
       
-      setPhotoAnalyzeProgress(100); // Complete
-      photoAnalyzeProgressRef.current = 100;
-      if (photoAnalyzeIntervalRef.current) {
-        clearInterval(photoAnalyzeIntervalRef.current);
-        photoAnalyzeIntervalRef.current = null;
-      }
-      
-      setCurrentStep(3); // Move to results step (now step 3)
-      
+      // Show results in a popup/modal instead of changing step
+      setShowResults(true);
       toast({
         title: "Analysis Complete",
-        description: "Your AI-powered fit analysis is ready!"
+        description: "Your fit analysis is ready! Check the results below.",
       });
     } catch (error) {
-      setPhotoAnalyzeProgress(0);
-      photoAnalyzeProgressRef.current = 0;
-      if (photoAnalyzeIntervalRef.current) {
-        clearInterval(photoAnalyzeIntervalRef.current);
-        photoAnalyzeIntervalRef.current = null;
-      }
       console.error('Error analyzing fit:', error);
       toast({
         title: "Analysis Failed",
@@ -227,15 +247,7 @@ const Index = () => {
         variant: "destructive"
       });
     } finally {
-      setTimeout(() => {
-        setIsAnalyzing(false);
-        setPhotoAnalyzeProgress(0);
-        photoAnalyzeProgressRef.current = 0;
-        if (photoAnalyzeIntervalRef.current) {
-          clearInterval(photoAnalyzeIntervalRef.current);
-          photoAnalyzeIntervalRef.current = null;
-        }
-      }, 500);
+      setIsAnalyzing(false);
     }
   };
 
@@ -331,6 +343,36 @@ const Index = () => {
                     </>
                   )}
                 </Button>
+                
+                {/* Quick Analyze for users with stored photos */}
+                {hasStoredPhoto && (
+                  <div className="mt-4 p-4 bg-green-900/20 rounded-xl border border-green-800/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <CheckCircle className="h-5 w-5 text-green-400" />
+                      <span className="text-green-200 font-semibold">Quick Analyze Available</span>
+                    </div>
+                    <p className="text-sm text-green-100 mb-3">
+                      You have a stored photo. Get instant results without uploading a new photo.
+                    </p>
+                    <Button 
+                      onClick={handleQuickAnalyze}
+                      disabled={isAnalyzing || !clothingUrl}
+                      className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-5 w-5 mr-2" />
+                          Quick Analyze
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
                   {/* Show clothing preview and size selection after scraping */}
                   {clothingData && !isAnalyzing && (
                     <div className="mt-8 animate-fade-in-up space-y-6">
@@ -443,7 +485,7 @@ const Index = () => {
                         <img src={userData.photo} alt="Your photo" className="max-h-32 mx-auto rounded-xl shadow-lg border-4 border-green-900/50" />
                         <p className="text-base text-green-300 font-semibold">Photo uploaded!</p>
                         <Button 
-                          onClick={handleAnalyze}
+                          onClick={handleQuickAnalyze}
                           disabled={isAnalyzing}
                           className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300 mt-4"
                         >
@@ -586,9 +628,6 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-lg py-3 rounded-xl shadow-xl mt-6 transition-all duration-300">
-                    Shop This Item
-                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -621,6 +660,97 @@ const Index = () => {
             )}
         </div>
       </div>
+      
+      {/* Results Popup */}
+      {showResults && analysisResult && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800/95 border border-gray-700 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Fit Analysis Results</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowResults(false)}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </Button>
+            </div>
+            
+            <div className="space-y-6">
+              {/* Fit Score */}
+              <div className="text-center">
+                <div className="text-4xl font-extrabold text-green-400 mb-2 drop-shadow-lg">
+                  {analysisResult.fitScore}%
+                </div>
+                <p className="text-base text-gray-400">Fit Score</p>
+                <Progress value={analysisResult.fitScore} className="mt-3 h-5" />
+              </div>
+              
+              {/* Virtual Overlay */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-lg text-blue-300">Virtual Try-On</h4>
+                <div className="relative">
+                  <img 
+                    src={analysisResult.overlay} 
+                    alt="Virtual try-on" 
+                    className="w-full h-64 object-cover rounded-2xl shadow-lg border-4 border-blue-900/50"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl" />
+                  <Badge className="absolute top-3 right-3 bg-green-600 text-white px-4 py-2 rounded-full shadow-lg text-base">
+                    Size {userData.preferredSize}
+                  </Badge>
+                </div>
+              </div>
+              
+              {/* Recommendation */}
+              <div className="space-y-4">
+                <div className="flex items-start gap-4 p-4 bg-green-900/20 rounded-xl shadow-inner border border-green-800/30">
+                  <CheckCircle className="h-6 w-6 text-green-400 mt-1 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-green-200">Recommendation</p>
+                    <p className="text-base text-green-100">
+                      {(() => {
+                        const score = analysisResult.fitScore;
+                        if (score >= 85) {
+                          return <span className="font-bold text-green-300">Definitely</span>;
+                        } else if (score >= 70) {
+                          return <span className="font-bold text-blue-300">Probably Yes</span>;
+                        } else if (score >= 50) {
+                          return <span className="font-bold text-yellow-300">Maybe</span>;
+                        } else if (score >= 30) {
+                          return <span className="font-bold text-orange-300">Probably No</span>;
+                        } else {
+                          return <span className="font-bold text-red-300">No Way</span>;
+                        }
+                      })()}
+                      {' - '}{analysisResult.recommendation}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  onClick={() => setShowResults(false)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-700"
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowResults(false);
+                    setCurrentStep(1);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                >
+                  Analyze Another Item
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Glassmorphism and animation styles: Move the following CSS to your global CSS file (e.g., index.css or globals.css)
         .glassmorphism-card {
           background: rgba(255,255,255,0.7);
