@@ -42,7 +42,7 @@ const Landing = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: 'https://fits4me.vercel.app/app'
+          emailRedirectTo: `${window.location.origin}/app`
         }
       });
 
