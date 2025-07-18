@@ -41,7 +41,7 @@ serve(async (req) => {
       throw new Error('Invalid user');
     }
 
-    console.log('Wardrobe management request:', { action, user: user.id });
+    console.log('Wardrobe management request:', { action, user: user.id, itemData });
 
     switch (action) {
       case 'add_item':
