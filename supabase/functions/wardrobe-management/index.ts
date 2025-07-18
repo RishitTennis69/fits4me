@@ -176,28 +176,7 @@ async function handleAnalyzePhoto(photoUrl: string, openaiApiKey: string) {
             content: [
               {
                 type: 'text',
-                text: `Analyze this clothing item and provide details in valid JSON format.
-
-IMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.
-
-Please provide:
-1. Clothing category (shirt, pants, dress, jacket, sweater, etc.)
-2. Primary color (be very specific: navy blue, forest green, etc.)
-3. Style description (casual, formal, sporty, etc.)
-4. Material type (cotton, polyester, denim, etc.)
-5. Estimated size (if visible or can be inferred)
-6. Any visible patterns or designs
-
-Respond in this exact JSON format:
-{
-  "category": "string (clothing type)",
-  "color": "string (specific color name)",
-  "style": "string (style description)",
-  "material": "string (material type)",
-  "estimatedSize": "string (size if visible)",
-  "patterns": "string (patterns or designs)",
-  "description": "string (comprehensive description)"
-}`
+                text: `Analyze this clothing item and provide details in valid JSON format.\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.\n\nPlease provide:\n1. Clothing category (shirt, pants, dress, jacket, sweater, etc.)\n2. Primary color (be very specific: navy blue, forest green, etc.)\n3. Style description (casual, formal, sporty, etc.)\n4. Material type (cotton, polyester, denim, etc.)\n5. Estimated size (if visible or can be inferred)\n6. Any visible patterns or designs\n7. If pants: estimate waist size and inseam/length in inches or centimeters.\n8. If shirt/jacket/sweater: estimate chest width and shirt/jacket length in inches or centimeters.\n\nRespond in this exact JSON format:\n{\n  "category": "string (clothing type)",\n  "color": "string (specific color name)",\n  "style": "string (style description)",\n  "material": "string (material type)",\n  "estimatedSize": "string (size if visible)",\n  "patterns": "string (patterns or designs)",\n  "description": "string (comprehensive description)",\n  "measurements": {\n    "waist": "number (waist in inches or cm, if pants)",\n    "inseam": "number (inseam/length in inches or cm, if pants)",\n    "chest": "number (chest width in inches or cm, if shirt/jacket)",\n    "length": "number (shirt/jacket length in inches or cm, if shirt/jacket)"\n  }\n}`
               },
               imageContent
             ]
