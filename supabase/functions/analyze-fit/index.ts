@@ -192,7 +192,24 @@ serve(async (req) => {
     }
 
     // 2. AI Fit Scores: Ask AI for both individual and overall fit scores in JSON
-    const fitScorePrompt = `You are a virtual clothing fit expert. Given the user's body measurements and the following clothing items, analyze the fit and provide:\n1. An overall fit score (0-100, higher is better)\n2. An individual fit score (0-100) for each item, with a brief reason\n3. A recommendation for each item (e.g., fits well, too tight, too loose, consider another size)\n4. A comprehensive JSON response with this structure:\n{\n  "overallFitScore": number,\n  "individualScores": [\n    {\n      "itemName": string,\n      "fitScore": number,\n      "reason": string,\n      "recommendation": string\n    }\n  ]\n}\nRespond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.`;
+    const fitScorePrompt = `You are a virtual clothing fit expert. Given the user's body measurements and the following clothing items, analyze the FIT ONLY and provide:
+1. An overall fit score (0-100, higher is better)
+2. An individual fit score (0-100) for each item, with a brief reason
+3. A recommendation for each item (e.g., fits well, too tight, too loose, consider another size)
+4. IMPORTANT: Do NOT comment on style, color, or whether the items look good together. Do NOT judge outfit compatibility, color harmony, or style cohesion. Only analyze fit.
+5. A comprehensive JSON response with this structure:
+{
+  "overallFitScore": number,
+  "individualScores": [
+    {
+      "itemName": string,
+      "fitScore": number,
+      "reason": string,
+      "recommendation": string
+    }
+  ]
+}
+Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.`;
     const fitScoreAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -466,11 +483,7 @@ Respond in this exact JSON format:
       overallFitScore: overallFitScore,
       individualScores: individualScores,
       outfitRecommendation: individualScores.map(s => s.recommendation).join(' | '),
-      outfitCompatibility: {
-        colorHarmony: Math.floor(Math.random() * 30) + 70, // Placeholder for now
-        styleCohesion: Math.floor(Math.random() * 30) + 70, // Placeholder for now
-        overallRating: overallFitScore >= 80 ? 'Excellent' : overallFitScore >= 70 ? 'Good' : overallFitScore >= 60 ? 'Moderate' : 'Poor'
-      },
+      // outfitCompatibility removed
       combinedOverlay: overlayImageUrl || 'https://via.placeholder.com/1024x1024?text=Virtual+Try-On+Unavailable',
       // Backward compatibility for single item
       analysis: analysisResult,
