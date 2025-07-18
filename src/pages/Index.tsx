@@ -9,9 +9,10 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Link, Shirt, User, Zap, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Link, Shirt, User, Zap, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface ClothingData {
   name: string;
@@ -63,6 +64,7 @@ const Index = () => {
   const [showSizeModal, setShowSizeModal] = useState(false);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const cameraInputRef = React.useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   // Check for authenticated user and stored photo
   useEffect(() => {
@@ -666,44 +668,6 @@ const Index = () => {
                     </div>
                     <p className="text-base text-gray-600">Fit Score</p>
                     <Progress value={analysisResult?.fitScore || 75} className="mt-3 h-5" />
-                    {/* Fit Score Guide */}
-                    <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                      <h4 className="font-semibold text-blue-700 mb-2">Fit Score Guide</h4>
-                      <div className="space-y-2 text-sm text-left">
-                        {(() => {
-                          const score = analysisResult?.fitScore || 75;
-                          if (score >= 85) {
-                            return (
-                              <div className="flex items-center gap-2 text-green-700">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                                <span><strong>85-100%:</strong> Excellent fit! This size should fit you perfectly. <strong>Buy with confidence!</strong></span>
-                              </div>
-                            );
-                          } else if (score >= 70) {
-                            return (
-                              <div className="flex items-center gap-2 text-blue-700">
-                                <CheckCircle className="h-4 w-4 text-blue-600" />
-                                <span><strong>70-84%:</strong> Good fit potential. This size should work well for you. <strong>Recommended to buy.</strong></span>
-                              </div>
-                            );
-                          } else if (score >= 50) {
-                            return (
-                              <div className="flex items-center gap-2 text-yellow-700">
-                                <AlertCircle className="h-4 w-4 text-yellow-600" />
-                                <span><strong>50-69%:</strong> Moderate fit. This size may need adjustments. <strong>Consider trying on first.</strong></span>
-                              </div>
-                            );
-                          } else {
-                            return (
-                              <div className="flex items-center gap-2 text-red-700">
-                                <AlertCircle className="h-4 w-4 text-red-600" />
-                                <span><strong>0-49%:</strong> Poor fit. This size is not recommended for your measurements. <strong>Don't buy this size.</strong></span>
-                              </div>
-                            );
-                          }
-                        })()}
-                      </div>
-                    </div>
                     {/* Detailed Score Breakdown */}
                     <div className="mt-4 grid grid-cols-2 gap-4">
                       <div className="bg-gray-100 p-2 rounded-lg">
@@ -711,12 +675,93 @@ const Index = () => {
                       </div>
                       <div className="bg-gray-100 p-2 rounded-lg">
                         <div className="font-semibold text-blue-700">Good fit potential</div>
-                      </div>
+                        </div>
                       <div className="bg-gray-100 p-2 rounded-lg">
                         <div className="font-semibold text-yellow-700">Moderate fit</div>
-                      </div>
+                        </div>
                       <div className="bg-gray-100 p-2 rounded-lg">
                         <div className="font-semibold text-red-700">Poor fit</div>
+                      </div>
+                    </div>
+                  </div>
+                  <Separator className="my-6 bg-gray-200" />
+                  {/* AI-Powered Fit Score Guide */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-lg text-blue-600">AI Fit Analysis Guide</h4>
+                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                      <p className="text-sm text-blue-700 mb-3">
+                        <strong>Your Score: {analysisResult?.fitScore || 75}%</strong> - Here's what this means for your specific body type and this clothing item:
+                      </p>
+                      <div className="space-y-3">
+                        {(() => {
+                          const score = analysisResult?.fitScore || 75;
+                          if (score >= 90) {
+                            return (
+                              <div className="bg-green-100 p-3 rounded-lg border border-green-200">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <CheckCircle className="h-5 w-5 text-green-600" />
+                                  <span className="font-bold text-green-800">90-100%: Exceptional Fit</span>
+                                </div>
+                                <p className="text-sm text-green-700">
+                                  This item is <strong>tailored almost perfectly</strong> for your body proportions. The AI analysis shows this size will fit you like it was custom-made. 
+                                  <strong>Buy with absolute confidence</strong> - this is the ideal fit for your body type.
+                                </p>
+                              </div>
+                            );
+                          } else if (score >= 80) {
+                            return (
+                              <div className="bg-blue-100 p-3 rounded-lg border border-blue-200">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <CheckCircle className="h-5 w-5 text-blue-600" />
+                                  <span className="font-bold text-blue-800">80-89%: Excellent Fit</span>
+                                </div>
+                                <p className="text-sm text-blue-700">
+                                  This item will fit you <strong>very well</strong>. The AI analysis indicates this size matches your body proportions excellently. 
+                                  <strong>Highly recommended to buy</strong> - you'll likely be very satisfied with the fit.
+                                </p>
+                              </div>
+                            );
+                          } else if (score >= 70) {
+                            return (
+                              <div className="bg-yellow-100 p-3 rounded-lg border border-yellow-200">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                                  <span className="font-bold text-yellow-800">70-79%: Good Fit</span>
+                                </div>
+                                <p className="text-sm text-yellow-700">
+                                  This item should fit you <strong>well</strong>. The AI analysis shows this size is suitable for your body type. 
+                                  <strong>Recommended to buy</strong>, but you might want to try it on first if possible.
+                                </p>
+                              </div>
+                            );
+                          } else if (score >= 50) {
+                            return (
+                              <div className="bg-orange-100 p-3 rounded-lg border border-orange-200">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <AlertCircle className="h-5 w-5 text-orange-600" />
+                                  <span className="font-bold text-orange-800">50-69%: Moderate Fit</span>
+                                </div>
+                                <p className="text-sm text-orange-700">
+                                  This item may fit you <strong>adequately</strong>. The AI analysis suggests this size might need some adjustments. 
+                                  <strong>Consider trying on first</strong> - the fit might be acceptable but not ideal.
+                                </p>
+                              </div>
+                            );
+                          } else {
+                            return (
+                              <div className="bg-red-100 p-3 rounded-lg border border-red-200">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <X className="h-5 w-5 text-red-600" />
+                                  <span className="font-bold text-red-800">0-49%: Poor Fit</span>
+                                </div>
+                                <p className="text-sm text-red-700">
+                                  This item is <strong>not recommended</strong> for your body type. The AI analysis indicates this size doesn't match your proportions well. 
+                                  <strong>Don't buy this size</strong> - consider a different size or item entirely.
+                                </p>
+                              </div>
+                            );
+                          }
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -742,26 +787,42 @@ const Index = () => {
                     <div className="flex items-start gap-4 p-4 bg-green-50 rounded-xl shadow-inner border border-green-200">
                       <CheckCircle className="h-6 w-6 text-green-600 mt-1 flex-shrink-0" />
                       <div>
-                        <p className="font-semibold text-green-700">Recommendation</p>
+                        <p className="font-semibold text-green-700">AI Recommendation</p>
                         <p className="text-base text-green-600">
                           {(() => {
                             const score = analysisResult?.fitScore || 75;
-                            if (score >= 85) {
-                              return <span className="font-bold text-green-700">Definitely</span>;
+                            if (score >= 90) {
+                              return <span className="font-bold text-green-700">Definitely Buy</span>;
+                            } else if (score >= 80) {
+                              return <span className="font-bold text-blue-700">Highly Recommended</span>;
                             } else if (score >= 70) {
-                              return <span className="font-bold text-blue-700">Probably Yes</span>;
+                              return <span className="font-bold text-yellow-700">Recommended</span>;
                             } else if (score >= 50) {
-                              return <span className="font-bold text-yellow-700">Maybe</span>;
-                            } else if (score >= 30) {
-                              return <span className="font-bold text-orange-700">Probably No</span>;
+                              return <span className="font-bold text-orange-700">Try On First</span>;
                             } else {
-                              return <span className="font-bold text-red-700">No Way</span>;
+                              return <span className="font-bold text-red-700">Don't Buy</span>;
                             }
                           })()}
                           {' - '}{analysisResult?.recommendation || 'Fit analysis completed successfully.'}
                         </p>
                       </div>
                     </div>
+                  </div>
+                  
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-6">
+                    <Button 
+                      onClick={() => navigate('/dashboard')}
+                      className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl py-3"
+                    >
+                      Return to Dashboard
+                    </Button>
+                    <Button 
+                      onClick={() => setCurrentStep(1)}
+                      className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white rounded-xl py-3"
+                    >
+                      Analyze Another Item
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -907,24 +968,105 @@ const Index = () => {
                 <div className="flex items-start gap-4 p-4 bg-green-50 rounded-xl shadow-inner border border-green-200">
                   <CheckCircle className="h-6 w-6 text-green-600 mt-1 flex-shrink-0" />
                   <div>
-                    <p className="font-semibold text-green-700">Recommendation</p>
+                    <p className="font-semibold text-green-700">AI Recommendation</p>
                     <p className="text-base text-green-600">
                       {(() => {
                         const score = analysisResult.fitScore;
-                        if (score >= 85) {
-                          return <span className="font-bold text-green-700">Definitely</span>;
+                        if (score >= 90) {
+                          return <span className="font-bold text-green-700">Definitely Buy</span>;
+                        } else if (score >= 80) {
+                          return <span className="font-bold text-blue-700">Highly Recommended</span>;
                         } else if (score >= 70) {
-                          return <span className="font-bold text-blue-700">Probably Yes</span>;
+                          return <span className="font-bold text-yellow-700">Recommended</span>;
                         } else if (score >= 50) {
-                          return <span className="font-bold text-yellow-700">Maybe</span>;
-                        } else if (score >= 30) {
-                          return <span className="font-bold text-orange-700">Probably No</span>;
+                          return <span className="font-bold text-orange-700">Try On First</span>;
                         } else {
-                          return <span className="font-bold text-red-700">No Way</span>;
+                          return <span className="font-bold text-red-700">Don't Buy</span>;
                         }
                       })()}
                       {' - '}{analysisResult.recommendation}
                     </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* AI-Powered Fit Score Guide */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-lg text-blue-600">AI Fit Analysis Guide</h4>
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                  <p className="text-sm text-blue-700 mb-3">
+                    <strong>Your Score: {analysisResult.fitScore}%</strong> - Here's what this means for your specific body type and this clothing item:
+                  </p>
+                  <div className="space-y-3">
+                    {(() => {
+                      const score = analysisResult.fitScore;
+                      if (score >= 90) {
+                        return (
+                          <div className="bg-green-100 p-3 rounded-lg border border-green-200">
+                            <div className="flex items-center gap-2 mb-2">
+                              <CheckCircle className="h-5 w-5 text-green-600" />
+                              <span className="font-bold text-green-800">90-100%: Exceptional Fit</span>
+                            </div>
+                            <p className="text-sm text-green-700">
+                              This item is <strong>tailored almost perfectly</strong> for your body proportions. The AI analysis shows this size will fit you like it was custom-made. 
+                              <strong>Buy with absolute confidence</strong> - this is the ideal fit for your body type.
+                            </p>
+                          </div>
+                        );
+                      } else if (score >= 80) {
+                        return (
+                          <div className="bg-blue-100 p-3 rounded-lg border border-blue-200">
+                            <div className="flex items-center gap-2 mb-2">
+                              <CheckCircle className="h-5 w-5 text-blue-600" />
+                              <span className="font-bold text-blue-800">80-89%: Excellent Fit</span>
+                            </div>
+                            <p className="text-sm text-blue-700">
+                              This item will fit you <strong>very well</strong>. The AI analysis indicates this size matches your body proportions excellently. 
+                              <strong>Highly recommended to buy</strong> - you'll likely be very satisfied with the fit.
+                            </p>
+                          </div>
+                        );
+                      } else if (score >= 70) {
+                        return (
+                          <div className="bg-yellow-100 p-3 rounded-lg border border-yellow-200">
+                            <div className="flex items-center gap-2 mb-2">
+                              <AlertCircle className="h-5 w-5 text-yellow-600" />
+                              <span className="font-bold text-yellow-800">70-79%: Good Fit</span>
+                            </div>
+                            <p className="text-sm text-yellow-700">
+                              This item should fit you <strong>well</strong>. The AI analysis shows this size is suitable for your body type. 
+                              <strong>Recommended to buy</strong>, but you might want to try it on first if possible.
+                            </p>
+                          </div>
+                        );
+                      } else if (score >= 50) {
+                        return (
+                          <div className="bg-orange-100 p-3 rounded-lg border border-orange-200">
+                            <div className="flex items-center gap-2 mb-2">
+                              <AlertCircle className="h-5 w-5 text-orange-600" />
+                              <span className="font-bold text-orange-800">50-69%: Moderate Fit</span>
+                            </div>
+                            <p className="text-sm text-orange-700">
+                              This item may fit you <strong>adequately</strong>. The AI analysis suggests this size might need some adjustments. 
+                              <strong>Consider trying on first</strong> - the fit might be acceptable but not ideal.
+                            </p>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className="bg-red-100 p-3 rounded-lg border border-red-200">
+                            <div className="flex items-center gap-2 mb-2">
+                              <X className="h-5 w-5 text-red-600" />
+                              <span className="font-bold text-red-800">0-49%: Poor Fit</span>
+                            </div>
+                            <p className="text-sm text-red-700">
+                              This item is <strong>not recommended</strong> for your body type. The AI analysis indicates this size doesn't match your proportions well. 
+                              <strong>Don't buy this size</strong> - consider a different size or item entirely.
+                            </p>
+                          </div>
+                        );
+                      }
+                    })()}
                   </div>
                 </div>
               </div>
@@ -939,11 +1081,11 @@ const Index = () => {
                 <Button 
                   onClick={() => {
                     setShowResults(false);
-                    setCurrentStep(1);
+                    navigate('/dashboard');
                   }}
                   className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                 >
-                  Analyze Another Item
+                  Return to Dashboard
                 </Button>
               </div>
             </div>
