@@ -154,6 +154,7 @@ async function handleDeleteItem(supabase: any, userId: string, itemId: string) {
 
 async function handleAnalyzePhoto(photoUrl: string, openaiApiKey: string) {
   try {
+    console.log('Received photoUrl for analysis:', photoUrl);
     const imageContent = {
       type: 'image_url',
       image_url: {
