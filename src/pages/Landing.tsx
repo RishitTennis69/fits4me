@@ -98,7 +98,7 @@ const Landing = () => {
                   setIsSignUp(true);
                   setShowAuthModal(true);
                 }}
-                className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl"
+                className="bg-white text-purple-600 border border-purple-600 hover:bg-purple-50 hover:text-purple-700 rounded-xl"
               >
                 Sign Up
               </Button>
