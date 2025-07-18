@@ -54,6 +54,9 @@ const Index = () => {
   const [analyzeProgress, setAnalyzeProgress] = useState(0);
   const analyzeProgressRef = React.useRef<number>(0);
   const analyzeIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [photoAnalyzeProgress, setPhotoAnalyzeProgress] = useState(0);
+  const photoAnalyzeProgressRef = React.useRef<number>(0);
+  const photoAnalyzeIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const cameraInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -163,6 +166,13 @@ const Index = () => {
     }
 
     setIsAnalyzing(true);
+    setPhotoAnalyzeProgress(5); // Start progress
+    photoAnalyzeProgressRef.current = 5;
+    if (photoAnalyzeIntervalRef.current) clearInterval(photoAnalyzeIntervalRef.current);
+    photoAnalyzeIntervalRef.current = setInterval(() => {
+      photoAnalyzeProgressRef.current = Math.min(photoAnalyzeProgressRef.current + Math.random() * 0.3 + 0.1, 92);
+      setPhotoAnalyzeProgress(photoAnalyzeProgressRef.current);
+    }, 200); // Slower than step 1 for ~5 seconds duration
     
     try {
       // Call Supabase edge function for AI fit analysis
@@ -190,6 +200,13 @@ const Index = () => {
         overlay: data.overlay || userData.photo // Use the generated overlay image
       });
       
+      setPhotoAnalyzeProgress(100); // Complete
+      photoAnalyzeProgressRef.current = 100;
+      if (photoAnalyzeIntervalRef.current) {
+        clearInterval(photoAnalyzeIntervalRef.current);
+        photoAnalyzeIntervalRef.current = null;
+      }
+      
       setCurrentStep(3); // Move to results step (now step 3)
       
       toast({
@@ -197,6 +214,12 @@ const Index = () => {
         description: "Your AI-powered fit analysis is ready!"
       });
     } catch (error) {
+      setPhotoAnalyzeProgress(0);
+      photoAnalyzeProgressRef.current = 0;
+      if (photoAnalyzeIntervalRef.current) {
+        clearInterval(photoAnalyzeIntervalRef.current);
+        photoAnalyzeIntervalRef.current = null;
+      }
       console.error('Error analyzing fit:', error);
       toast({
         title: "Analysis Failed",
@@ -204,7 +227,15 @@ const Index = () => {
         variant: "destructive"
       });
     } finally {
-      setIsAnalyzing(false);
+      setTimeout(() => {
+        setIsAnalyzing(false);
+        setPhotoAnalyzeProgress(0);
+        photoAnalyzeProgressRef.current = 0;
+        if (photoAnalyzeIntervalRef.current) {
+          clearInterval(photoAnalyzeIntervalRef.current);
+          photoAnalyzeIntervalRef.current = null;
+        }
+      }, 500);
     }
   };
 
@@ -224,10 +255,10 @@ const Index = () => {
       <div className="container mx-auto px-4 py-12 flex flex-col items-center">
         <div className="text-center mb-12 w-full max-w-2xl">
           <h1 className="text-5xl font-bold leading-normal bg-gradient-to-r from-purple-600 via-blue-500 to-pink-500 bg-clip-text text-transparent mb-4 drop-shadow-lg">
-            Virtual Fitting Room
+            Fits4Me
           </h1>
           <p className="text-xl text-gray-700 font-medium max-w-2xl mx-auto">
-            Try on clothes virtually with AI-powered size recommendations
+            Only Buy What Fits
           </p>
         </div>
 
@@ -496,20 +527,21 @@ const Index = () => {
                         })()}
                       </div>
                     </div>
-                  {/* Detailed Score Breakdown */}
-                  <div className="mt-4id grid-cols-2                   <div className="bg-white/60 p-2 rounded-lg">
-                          <div className="font-semibold text-green-70                   <div className="text-gray-600>Perfect fit</div>
-                        </div>
-                        <div className="bg-white/60 p-2 rounded-lg">
-                          <div className="font-semibold text-blue-700                   <div className="text-gray-600                   </div>
-                        <div className="bg-white/60 p-2 rounded-lg">
-                          <div className="font-semibold text-yellow-700                   <div className="text-gray-60>Moderate fit</div>
-                        </div>
-                        <div className="bg-white/60 p-2 rounded-lg">
-                          <div className="font-semibold text-red-700                   <div className="text-gray-600                   </div>
+                    {/* Detailed Score Breakdown */}
+                    <div className="mt-4 grid grid-cols-2 gap-4">
+                      <div className="bg-white/60 p-2 rounded-lg">
+                        <div className="font-semibold text-green-700">Perfect fit</div>
+                      </div>
+                      <div className="bg-white/60 p-2 rounded-lg">
+                        <div className="font-semibold text-blue-700">Good fit potential</div>
+                      </div>
+                      <div className="bg-white/60 p-2 rounded-lg">
+                        <div className="font-semibold text-yellow-700">Moderate fit</div>
+                      </div>
+                      <div className="bg-white/60 p-2 rounded-lg">
+                        <div className="font-semibold text-red-700">Poor fit</div>
                       </div>
                     </div>
-                  </div>
                   <Separator className="my-6" />
                   {/* Virtual Overlay */}
                   <div className="space-y-3">
@@ -533,14 +565,23 @@ const Index = () => {
                       <CheckCircle className="h-6 w-6 text-green-600 mt-1 flex-shrink-0" />
                       <div>
                         <p className="font-semibold text-green-800">Recommendation</p>
-                        <p className="text-base text-green-700">{analysisResult?.recommendation || 'Fit analysis completed successfully.'}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4 p-4 bg-blue-50/80 rounded-xl shadow-inner">
-                      <AlertCircle className="h-6 w-6 text-blue-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <p className="font-semibold text-blue-800">Size Advice</p>
-                        <p className="text-base text-blue-700">{analysisResult?.sizeAdvice || 'Size recommendation available.'}</p>
+                        <p className="text-base text-green-700">
+                          {(() => {
+                            const score = analysisResult?.fitScore || 75;
+                            if (score >= 85) {
+                              return <span className="font-bold text-green-700">Definitely</span>;
+                            } else if (score >= 70) {
+                              return <span className="font-bold text-blue-700">Probably Yes</span>;
+                            } else if (score >= 50) {
+                              return <span className="font-bold text-yellow-700">Maybe</span>;
+                            } else if (score >= 30) {
+                              return <span className="font-bold text-orange-700">Probably No</span>;
+                            } else {
+                              return <span className="font-bold text-red-700">No Way</span>;
+                            }
+                          })()}
+                          {' - '}{analysisResult?.recommendation || 'Fit analysis completed successfully.'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -556,13 +597,21 @@ const Index = () => {
             <div className="w-full max-w-2xl animate-fade-in-up mt-8">
               <Card className="glassmorphism-card p-10 text-lg">
                 <CardHeader>
-                  <CardTitle className="text-blue-700">Analyzing Fit...</CardTitle>
+                  <CardTitle className="text-blue-700">
+                    {currentStep === 1 ? "Analyzing Clothing..." : "Analyzing Fit..."}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
-                    <Progress value={analyzeProgress} className="w-full h-6 shadow-lg" />
+                    <Progress 
+                      value={currentStep === 1 ? analyzeProgress : photoAnalyzeProgress} 
+                      className="w-full h-6 shadow-lg" 
+                    />
                     <p className="text-center text-gray-600">
-                      AI is analyzing your body proportions and clothing fit...
+                      {currentStep === 1 
+                        ? "AI is analyzing the clothing item and extracting size information..."
+                        : "AI is analyzing your body proportions and clothing fit..."
+                      }
                     </p>
                   </div>
                 </CardContent>
