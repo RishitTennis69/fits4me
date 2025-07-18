@@ -15,11 +15,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface ClothingData {
+  id: string; // Add unique ID for each item
   name: string;
   price: string;
   sizes: string[];
   images: string[];
   sizeChart?: Record<string, Record<string, string>>;
+  selectedSize?: string; // Track selected size for each item
 }
 
 interface UserData {
@@ -31,10 +33,28 @@ interface UserData {
   inches: number; // New: separate inches input
 }
 
+interface MultiItemAnalysis {
+  overallFitScore: number;
+  individualScores: {
+    itemId: string;
+    fitScore: number;
+    recommendation: string;
+  }[];
+  outfitCompatibility: {
+    colorHarmony: number;
+    styleCohesion: number;
+    overallRating: string;
+  };
+  combinedOverlay: string;
+  outfitRecommendation: string;
+}
+
 const Index = () => {
   const { toast } = useToast();
   const [clothingUrl, setClothingUrl] = useState('');
   const [clothingData, setClothingData] = useState<ClothingData | null>(null);
+  const [selectedItems, setSelectedItems] = useState<ClothingData[]>([]);
+  const [isMultiItemMode, setIsMultiItemMode] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [hasStoredPhoto, setHasStoredPhoto] = useState(false);
   // Store height in inches and weight in pounds
@@ -191,12 +211,18 @@ const Index = () => {
 
       const scrapedData = data.data;
       const clothingInfo: ClothingData = {
+        id: `clothing-${Date.now()}`, // Generate a unique ID
         name: scrapedData.name,
         price: scrapedData.price,
         sizes: scrapedData.sizes,
         images: scrapedData.images || ["/placeholder.svg"], // Ensure images is an array
-        sizeChart: scrapedData.sizeChart
+        sizeChart: scrapedData.sizeChart,
+        selectedSize: scrapedData.sizes[0] // Default to first available size
       };
+      
+      // Add to selected items instead of replacing
+      setSelectedItems(prev => [...prev, clothingInfo]);
+      setIsMultiItemMode(true);
       
       setClothingData(clothingInfo);
       setAnalyzeProgress(100); // Complete
@@ -206,14 +232,14 @@ const Index = () => {
         analyzeIntervalRef.current = null;
       }
       toast({
-        title: "Clothing Analyzed",
-        description: "Successfully extracted clothing data from the URL"
+        title: "Clothing Added",
+        description: `"${clothingInfo.name}" added to your outfit. You can add more items or continue to size selection.`
       });
       
-      // Show size selection modal
-      setShowSizeModal(true);
+      // Clear the URL input for next item
+      setClothingUrl('');
       
-      // Don't automatically advance to step 2 - let user select size first
+      // Don't automatically advance to step 2 - let user add more items or continue
     } catch (error) {
       setAnalyzeProgress(0);
       analyzeProgressRef.current = 0;
@@ -345,10 +371,10 @@ const Index = () => {
   };
 
   const handlePhotoAnalysis = async () => {
-    if (!clothingData || !userData.photo) {
+    if (!selectedItems.length || !userData.photo) {
       toast({
         title: "Missing Information",
-        description: "Please ensure you have uploaded a photo and analyzed clothing data.",
+        description: "Please ensure you have uploaded a photo and selected clothing items.",
         variant: "destructive"
       });
       return;
@@ -364,12 +390,13 @@ const Index = () => {
     }, 150);
     
     try {
-      // Use the analyze-fit function which handles both user appearance analysis and virtual try-on
+      // Use the multi-item analyze-fit function
       const { data: analysisResult, error: analysisError } = await supabase.functions.invoke('analyze-fit', {
         body: { 
           userPhoto: userData.photo,
-          clothingData: clothingData,
-          userData: userData
+          clothingItems: selectedItems, // Pass array of items
+          userData: userData,
+          isMultiItem: true
         }
       });
 
@@ -378,31 +405,31 @@ const Index = () => {
       }
 
       if (!analysisResult.success) {
-        throw new Error(analysisResult.error || 'Failed to analyze fit');
+        throw new Error(analysisResult.error || 'Failed to analyze outfit');
       }
 
       setPhotoAnalyzeProgress(100);
       photoAnalyzeProgressRef.current = 100;
 
-      // Set the analysis results
+      // Set the analysis results for multi-item
       setAnalysisResult({
-        fitScore: analysisResult.analysis?.fitScore || Math.floor(Math.random() * 40) + 60,
-        recommendation: analysisResult.analysis?.recommendation || 'Fit analysis completed successfully.',
-        sizeAdvice: analysisResult.analysis?.sizeAdvice || 'Size recommendation available.',
-        overlay: analysisResult.overlay || userData.photo
+        fitScore: analysisResult.overallFitScore || Math.floor(Math.random() * 40) + 60,
+        recommendation: analysisResult.outfitRecommendation || 'Outfit analysis completed successfully.',
+        sizeAdvice: analysisResult.individualScores?.map(score => `${score.recommendation}`).join(' ') || 'Size recommendations available.',
+        overlay: analysisResult.combinedOverlay || userData.photo
       });
       
       // Move to results step
       setCurrentStep(3);
       toast({
-        title: "Analysis Complete",
-        description: "Your fit analysis is ready! Check the results below.",
+        title: "Outfit Analysis Complete",
+        description: "Your outfit analysis is ready! Check the results below.",
       });
     } catch (error) {
-      console.error('Error analyzing fit:', error);
+      console.error('Error analyzing outfit:', error);
       toast({
         title: "Analysis Failed",
-        description: error instanceof Error ? error.message : "Failed to analyze clothing fit",
+        description: error instanceof Error ? error.message : "Failed to analyze outfit",
         variant: "destructive"
       });
     } finally {
@@ -434,6 +461,9 @@ const Index = () => {
           <h1 className="text-5xl font-bold leading-normal bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-4 drop-shadow-lg">
             Try It On!
           </h1>
+          <p className="text-lg text-gray-600">
+            {isMultiItemMode ? "Build your perfect outfit with AI-powered fit analysis" : "Get AI-powered fit recommendations for any clothing item"}
+          </p>
         </div>
 
         {/* Progress Steps */}
@@ -474,7 +504,7 @@ const Index = () => {
               <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-blue-600">
                     <Link className="h-6 w-6 text-blue-500" />
-                  Step 1: Enter Clothing URL & Select Size
+                  Step 1: Add Clothing Items & Select Sizes
                 </CardTitle>
               </CardHeader>
                 <CardContent className="space-y-6">
@@ -536,25 +566,86 @@ const Index = () => {
                   </div>
                 )}
                   {/* Show clothing preview and size selection after scraping */}
-                  {clothingData && !isAnalyzing && (
+                  {selectedItems.length > 0 && !isAnalyzing && (
                     <div className="mt-8 animate-fade-in-up space-y-6">
-                      <Card className="bg-white border-gray-200 shadow-lg">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-3 text-blue-600">
-                            <Shirt className="h-6 w-6 text-blue-500" />
-                            Clothing Item
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-6">
-                            <img src={clothingData.images[0]} alt={clothingData.name} className="w-full h-56 object-cover rounded-2xl bg-gray-100 shadow-lg border-4 border-blue-200" />
-                            <div>
-                              <h3 className="font-semibold text-xl text-gray-900">{clothingData.name}</h3>
-                              <p className="text-2xl font-bold text-green-600">{clothingData.price}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                      {/* Shopping Cart Header */}
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xl font-bold text-gray-900">Your Outfit ({selectedItems.length} items)</h3>
+                        <Button
+                          onClick={() => {
+                            setSelectedItems([]);
+                            setIsMultiItemMode(false);
+                            setClothingData(null);
+                          }}
+                          variant="outline"
+                          className="text-red-600 border-red-300 hover:bg-red-50"
+                        >
+                          Clear All
+                        </Button>
+                      </div>
+                      
+                      {/* Selected Items Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedItems.map((item, index) => (
+                          <Card key={item.id} className="bg-white border-gray-200 shadow-lg">
+                            <CardHeader className="pb-3">
+                              <div className="flex justify-between items-start">
+                                <CardTitle className="text-lg font-semibold text-gray-900 line-clamp-2">
+                                  {item.name}
+                                </CardTitle>
+                                <Button
+                                  onClick={() => setSelectedItems(prev => prev.filter((_, i) => i !== index))}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  ✕
+                                </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-4">
+                                <img src={item.images[0]} alt={item.name} className="w-full h-32 object-cover rounded-xl bg-gray-100 shadow-lg border-2 border-blue-200" />
+                                <div className="flex justify-between items-center">
+                                  <p className="text-lg font-bold text-green-600">{item.price}</p>
+                                  <div className="flex gap-2">
+                                    {item.sizes.map(size => (
+                                      <Button
+                                        key={size}
+                                        variant={item.selectedSize === size ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => {
+                                          setSelectedItems(prev => prev.map((prevItem, i) => 
+                                            i === index ? { ...prevItem, selectedSize: size } : prevItem
+                                          ));
+                                        }}
+                                        className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-200 ${
+                                          item.selectedSize === size 
+                                            ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg scale-105' 
+                                            : 'bg-white text-blue-600 border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                      >
+                                        {size}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                      
+                      {/* Continue Button */}
+                      <div className="flex gap-3 pt-4">
+                        <Button 
+                          onClick={() => setShowSizeModal(true)}
+                          disabled={selectedItems.length === 0}
+                          className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300"
+                        >
+                          Continue to Photo Upload ({selectedItems.length} items)
+                        </Button>
+                      </div>
                     </div>
                   )}
               </CardContent>
@@ -568,7 +659,7 @@ const Index = () => {
               <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-green-600">
                     <Upload className="h-6 w-6 text-green-500" />
-                  Step 2: Upload Full Body Photo & Analyze Fit
+                  Step 2: Upload Photo & Analyze Outfit
                 </CardTitle>
               </CardHeader>
                 <CardContent className="space-y-6">
@@ -643,7 +734,7 @@ const Index = () => {
                           <li>• The lighting is good and clear</li>
                           <li>• You're wearing form-fitting clothes (not baggy)</li>
                         </ul>
-                        <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+                        <p className="text-xs text-gray-500">This will help our AI analyze how your {selectedItems.length > 1 ? 'outfit items' : 'clothing item'} will fit together.</p>
                       </div>
                     )}
                 </div>
@@ -657,7 +748,7 @@ const Index = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-green-600">
                     <CheckCircle className="h-6 w-6 text-green-500" />
-                    Step 3: AI Analysis & Results
+                    Step 3: Outfit Analysis & Results
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-8">
@@ -846,7 +937,7 @@ const Index = () => {
                     <p className="text-center text-gray-600">
                       {currentStep === 1 
                         ? "AI is analyzing the clothing item and extracting size information..."
-                        : "AI is analyzing your body proportions and clothing fit..."
+                        : "AI is analyzing your body proportions and outfit compatibility..."
                       }
                     </p>
                   </div>
