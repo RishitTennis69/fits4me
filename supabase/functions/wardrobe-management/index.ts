@@ -121,7 +121,7 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
       description: aiAnalysis?.description || null,
       measurements: aiAnalysis?.measurements || null
     };
-    console.log('Wardrobe Insert:', wardrobeInsert);
+    console.log('Wardrobe Insert (before insert):', wardrobeInsert);
 
     const { data, error } = await supabase
       .from('user_wardrobe')
@@ -129,8 +129,10 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
       .select()
       .single();
 
+    console.log('Insert response:', { data, error });
+
     if (error) {
-      console.error('handleAddItem: error inserting item', { error });
+      console.error('handleAddItem: error inserting item', { error, wardrobeInsert });
       // Still return success to frontend so UI can move on
       return new Response(JSON.stringify({
         success: false,
