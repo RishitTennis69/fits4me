@@ -76,28 +76,47 @@ serve(async (req) => {
 
 async function handleAddItem(supabase: any, userId: string, itemData: any, openaiApiKey: string) {
   try {
+    console.log('handleAddItem: start', { userId, itemData });
     // Analyze the photo if AI analysis is requested
-    let aiAnalysis = null;
+    let aiAnalysis: any = null;
     if (itemData.analyzeWithAI && itemData.photoUrl) {
+      console.log('handleAddItem: analyzing photo with AI', { photoUrl: itemData.photoUrl });
       aiAnalysis = await analyzeClothingPhoto(itemData.photoUrl, openaiApiKey);
+      console.log('handleAddItem: AI analysis result', { aiAnalysis });
+    } else {
+      console.log('handleAddItem: skipping AI analysis', { analyzeWithAI: itemData.analyzeWithAI, photoUrl: itemData.photoUrl });
     }
+
+    // Only 'size' comes from user input, all other details from AI
+    const wardrobeInsert = {
+      user_id: userId,
+      size: itemData.size,
+      photo_url: itemData.photoUrl,
+      ai_analysis: aiAnalysis,
+      // The following fields are filled from AI if available
+      category: aiAnalysis?.category || null,
+      color: aiAnalysis?.color || null,
+      style: aiAnalysis?.style || null,
+      material: aiAnalysis?.material || null,
+      estimated_size: aiAnalysis?.estimatedSize || null,
+      patterns: aiAnalysis?.patterns || null,
+      description: aiAnalysis?.description || null,
+      measurements: aiAnalysis?.measurements || null
+    };
+    console.log('handleAddItem: wardrobeInsert object', { wardrobeInsert });
 
     const { data, error } = await supabase
       .from('user_wardrobe')
-      .insert({
-        user_id: userId,
-        name: itemData.name,
-        category: itemData.category,
-        color: itemData.color,
-        size: itemData.size,
-        photo_url: itemData.photoUrl,
-        ai_analysis: aiAnalysis
-      })
+      .insert(wardrobeInsert)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('handleAddItem: error inserting item', { error });
+      throw error;
+    }
 
+    console.log('handleAddItem: item added successfully', { data });
     return new Response(JSON.stringify({
       success: true,
       item: data
@@ -106,6 +125,7 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
     });
 
   } catch (error) {
+    console.error('handleAddItem: failed to add item', { error });
     throw new Error(`Failed to add item: ${error.message}`);
   }
 }
@@ -156,14 +176,14 @@ async function handleDeleteItem(supabase: any, userId: string, itemId: string) {
 
 async function handleAnalyzePhoto(photoUrl: string, openaiApiKey: string) {
   try {
-    console.log('Received photoUrl for analysis:', photoUrl);
+    console.log('handleAnalyzePhoto: received photoUrl for analysis', { photoUrl });
     const imageContent = {
       type: 'image_url',
       image_url: {
         url: photoUrl
       }
     };
-    console.log('Calling OpenAI for clothing analysis...');
+    console.log('handleAnalyzePhoto: calling OpenAI for clothing analysis...');
     const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -187,28 +207,30 @@ async function handleAnalyzePhoto(photoUrl: string, openaiApiKey: string) {
         ]
       }),
     });
-    console.log('OpenAI response status:', analysisResponse.status);
+    console.log('handleAnalyzePhoto: OpenAI response status', { status: analysisResponse.status });
     if (!analysisResponse.ok) {
       const errorText = await analysisResponse.text();
-      console.error('OpenAI API error details:', errorText);
+      console.error('handleAnalyzePhoto: OpenAI API error details', { errorText });
       throw new Error(`OpenAI API error: ${analysisResponse.status} - ${errorText}`);
     }
     const analysisData = await analysisResponse.json();
+    console.log('handleAnalyzePhoto: OpenAI response data', { analysisData });
     const analysis = analysisData.choices?.[0]?.message?.content;
-    
+    console.log('handleAnalyzePhoto: extracted analysis content', { analysis });
     if (analysis) {
       try {
-        return JSON.parse(analysis);
+        const parsed = JSON.parse(analysis);
+        console.log('handleAnalyzePhoto: parsed AI analysis', { parsed });
+        return parsed;
       } catch (parseError) {
-        console.error('Failed to parse AI analysis:', parseError);
+        console.error('handleAnalyzePhoto: failed to parse AI analysis', { parseError, analysis });
         return null;
       }
     }
-
+    console.warn('handleAnalyzePhoto: no analysis content found');
     return null;
-
   } catch (error) {
-    console.error('Error analyzing photo:', error);
+    console.error('handleAnalyzePhoto: error analyzing photo', { error });
     return null;
   }
 }
