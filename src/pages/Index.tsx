@@ -66,15 +66,38 @@ const Index = () => {
   // Check for authenticated user and stored photo
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      // Handle magic link authentication
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      // Check for auth hash in URL (magic link flow)
+      const hash = window.location.hash;
+      let sessionData = null;
+      
+      if (hash && hash.includes('access_token')) {
+        try {
+          const { data, error } = await supabase.auth.getSession();
+          if (error) throw error;
+          if (data.session) {
+            sessionData = data;
+            setUser(data.session.user);
+            // Clear the hash from URL
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } catch (error) {
+          console.error('Error handling auth hash:', error);
+        }
+      } else if (user) {
         setUser(user);
-        // Check if user has a stored photo in database
+      }
+      
+      // Check if user has a stored photo in database
+      const currentUser = user || sessionData?.session?.user;
+      if (currentUser) {
         try {
           const { data: profile, error } = await supabase
             .from('user_profiles')
             .select('photo_url')
-            .eq('user_id', user.id)
+            .eq('user_id', currentUser.id)
             .single();
           
           if (!error && profile?.photo_url) {
