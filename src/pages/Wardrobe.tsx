@@ -38,18 +38,10 @@ const Wardrobe = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const uploadInputRef = React.useRef<HTMLInputElement>(null);
   const cameraInputRef = React.useRef<HTMLInputElement>(null);
-  const [shouldReloadWardrobe, setShouldReloadWardrobe] = useState(false);
 
   useEffect(() => {
     loadWardrobeItems();
   }, []);
-
-  useEffect(() => {
-    if (shouldReloadWardrobe) {
-      loadWardrobeItems();
-      setShouldReloadWardrobe(false);
-    }
-  }, [shouldReloadWardrobe]);
 
   const loadWardrobeItems = async () => {
     try {
@@ -166,13 +158,13 @@ const Wardrobe = () => {
           title: "Success",
           description: "Item added to your wardrobe"
         });
-        
         // Reset form
         setNewItemPhoto('');
         setNewItemData({ name: '', category: '', color: '', size: '', sizeType: '' });
         setAiAnalysis(null);
         setIsAddingItem(false);
-        setShouldReloadWardrobe(true);
+        // Only reload after modal is closed
+        setTimeout(() => loadWardrobeItems(), 100);
       }
     } catch (error) {
       console.error('Error adding item:', error);
@@ -197,7 +189,8 @@ const Wardrobe = () => {
           title: "Success",
           description: "Item removed from wardrobe"
         });
-        setShouldReloadWardrobe(true);
+        // Only reload after delete
+        loadWardrobeItems();
       }
     } catch (error) {
       console.error('Error deleting item:', error);
