@@ -44,6 +44,7 @@ const Wardrobe = () => {
   }, []);
 
   const loadWardrobeItems = async () => {
+    setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -51,9 +52,27 @@ const Wardrobe = () => {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke('wardrobe-management', {
-        body: { action: 'get_items' }
+      // Use Promise.race for timeout
+      const fetchPromise = supabase.functions.invoke('wardrobe-management', {
+        body: { action: 'get_items', limit: 20 }
       });
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000));
+      let response;
+      try {
+        response = await Promise.race([fetchPromise, timeoutPromise]);
+      } catch (error) {
+        if (error.message === 'Timeout') {
+          toast({
+            title: "Timeout",
+            description: "Wardrobe took too long to load. Please try again.",
+            variant: "destructive"
+          });
+          return;
+        } else {
+          throw error;
+        }
+      }
+      const { data, error } = response;
 
       if (error) throw error;
 
