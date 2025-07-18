@@ -41,8 +41,8 @@ const Landing = () => {
     try {
       // Try using a relative redirect URL first, fallback to absolute
       const redirectUrl = window.location.hostname === 'localhost' 
-        ? `${window.location.origin}/app`
-        : 'https://fits4me.vercel.app/app';
+        ? `${window.location.origin}/dashboard`
+        : 'https://fits4me.vercel.app/dashboard';
       console.log('Current origin:', window.location.origin);
       console.log('Redirect URL:', redirectUrl);
       
@@ -119,7 +119,9 @@ const Landing = () => {
         <div className="relative container mx-auto px-4 py-20">
           <div className="text-center max-w-4xl mx-auto pt-20">
             <div className="flex items-center justify-center mb-6">
-              <TShirtIcon className="h-8 w-8 text-purple-600 mr-3" />
+              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center mr-3">
+                <TShirtIcon className="h-6 w-6 text-white" />
+              </div>
               <span className="text-gray-800 font-semibold">AI-Powered Recommendations</span>
             </div>
             <h1 className="text-6xl md:text-7xl font-bold leading-tight bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-6">
@@ -147,7 +149,7 @@ const Landing = () => {
       </section>
 
       {/* Core Features */}
-      <section className="py-20" style={{ backgroundColor: '#F8F9FA' }}>
+      <section className="py-20" style={{ backgroundColor: '#FAFBFC' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
