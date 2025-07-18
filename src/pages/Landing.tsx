@@ -221,7 +221,7 @@ const Landing = () => {
             </div>
             
             <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-white">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-blue-700 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold text-white">
                 2
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Upload Your Photo</h3>
@@ -246,12 +246,9 @@ const Landing = () => {
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-purple-400 via-blue-500 to-blue-600">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">
+          <h2 className="text-4xl font-bold text-white mb-8">
             Ready to Never Buy Ill-Fitting Clothes Again?
           </h2>
-          <p className="text-xl text-gray-200 mb-8 max-w-2xl mx-auto">
-            Join thousands of users who trust Fits4Me for accurate fit predictions and confident shopping.
-          </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
               onClick={scrollToMain}
