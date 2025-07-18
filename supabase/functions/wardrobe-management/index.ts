@@ -103,6 +103,7 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
       ai_analysis: aiAnalysis,
       ai_raw: aiRaw,
       // The following fields are filled from AI if available
+      name: aiAnalysis?.description || aiAnalysis?.category || 'Unnamed Item',
       category: aiAnalysis?.category || null,
       color: aiAnalysis?.color || null,
       style: aiAnalysis?.style || null,
