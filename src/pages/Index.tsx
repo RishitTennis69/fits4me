@@ -954,7 +954,7 @@ const Index = () => {
                     </h4>
                     <div className="relative bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 p-4 rounded-2xl border border-blue-400/30">
                       <img 
-                        src={selectedItems.length > 1 ? (analysisResult?.combinedOverlay || userData.photo) : (analysisResult?.overlay || userData.photo)} 
+                        src={selectedItems.length > 1 ? analysisResult?.combinedOverlay : analysisResult?.overlay} 
                         alt={selectedItems.length > 1 ? "Complete outfit try-on" : "Virtual try-on"} 
                         className="w-full h-72 object-cover rounded-2xl shadow-lg border-4 border-blue-300"
                       />
