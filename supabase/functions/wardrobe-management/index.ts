@@ -162,7 +162,7 @@ async function handleAnalyzePhoto(photoUrl: string, openaiApiKey: string) {
         url: photoUrl
       }
     };
-
+    console.log('Calling OpenAI for clothing analysis...');
     const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -186,11 +186,12 @@ async function handleAnalyzePhoto(photoUrl: string, openaiApiKey: string) {
         ]
       }),
     });
-
+    console.log('OpenAI response status:', analysisResponse.status);
     if (!analysisResponse.ok) {
-      throw new Error(`OpenAI API error: ${analysisResponse.status}`);
+      const errorText = await analysisResponse.text();
+      console.error('OpenAI API error details:', errorText);
+      throw new Error(`OpenAI API error: ${analysisResponse.status} - ${errorText}`);
     }
-
     const analysisData = await analysisResponse.json();
     const analysis = analysisData.choices?.[0]?.message?.content;
     
