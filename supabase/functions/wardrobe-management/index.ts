@@ -95,11 +95,15 @@ async function handleAddItem(supabase: any, userId: string, itemData: any, opena
       console.log('handleAddItem: skipping AI analysis', { analyzeWithAI: itemData.analyzeWithAI, photoUrl: itemData.photoUrl });
     }
 
-    // Defensive fallback for name
-    const nameValue = (aiAnalysis?.description && aiAnalysis.description.trim()) ||
-      (aiAnalysis?.category && aiAnalysis.category.trim()) ||
+    // Final defensive fallback for name
+    const nameValue =
+      (aiAnalysis && typeof aiAnalysis === 'object' && (
+        (aiAnalysis.description && aiAnalysis.description.trim()) ||
+        (aiAnalysis.category && aiAnalysis.category.trim())
+      )) ||
       'Unnamed Item';
     console.log('AI Analysis:', aiAnalysis);
+    console.log('Final name value:', nameValue);
     // Only 'size' comes from user input, all other details from AI
     const wardrobeInsert = {
       user_id: userId,
