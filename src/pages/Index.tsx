@@ -429,7 +429,7 @@ const Index = () => {
     photoAnalyzeProgressRef.current = 5;
     if (photoAnalyzeIntervalRef.current) clearInterval(photoAnalyzeIntervalRef.current);
     photoAnalyzeIntervalRef.current = setInterval(() => {
-      photoAnalyzeProgressRef.current = Math.min(photoAnalyzeProgressRef.current + Math.random() * 0.8 + 0.3, 90);
+      photoAnalyzeProgressRef.current = Math.min(photoAnalyzeProgressRef.current + Math.random() * 0.3 + 0.1, 80);
       setPhotoAnalyzeProgress(photoAnalyzeProgressRef.current);
     }, 150);
     
@@ -500,7 +500,7 @@ const Index = () => {
   };
 
   return (
-    <div id="main-app" className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div id="main-app" className="min-h-screen bg-white flex items-center justify-center">
       <div className="container mx-auto px-4 py-12 flex flex-col items-center">
         <div className="text-center mb-12 w-full max-w-2xl">
           <h1 className="text-5xl font-bold leading-normal bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent mb-4 drop-shadow-lg">
@@ -564,23 +564,23 @@ const Index = () => {
                   />
                 </div>
                 <div className="flex gap-3">
-                  <Button 
-                    onClick={handleUrlSubmit}
-                    disabled={isAnalyzing}
+                <Button 
+                  onClick={handleUrlSubmit}
+                  disabled={isAnalyzing}
                     className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300"
-                  >
-                    {isAnalyzing ? (
-                      <>
+                >
+                  {isAnalyzing ? (
+                    <>
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
                         <Zap className="h-5 w-5 mr-2" />
                         Add New Item
-                      </>
-                    )}
-                  </Button>
+                    </>
+                  )}
+                </Button>
                   <Button 
                     onClick={() => setShowWardrobeModal(true)}
                     disabled={wardrobeItems.length === 0}
@@ -638,7 +638,7 @@ const Index = () => {
                         >
                           Clear All
                         </Button>
-                      </div>
+                            </div>
                       
                       {/* Selected Items Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -648,7 +648,7 @@ const Index = () => {
                               <div className="flex justify-between items-start">
                                 <CardTitle className="text-lg font-semibold text-gray-900 line-clamp-2">
                                   {item.name}
-                                </CardTitle>
+                          </CardTitle>
                                 <Button
                                   onClick={() => setSelectedItems(prev => prev.filter((_, i) => i !== index))}
                                   variant="ghost"
@@ -658,7 +658,7 @@ const Index = () => {
                                   ✕
                                 </Button>
                               </div>
-                            </CardHeader>
+                        </CardHeader>
                             <CardContent>
                               <div className="space-y-4">
                                 <img src={item.images[0]} alt={item.name} className="w-full h-32 object-cover rounded-xl bg-gray-100 shadow-lg border-2 border-blue-200" />
@@ -666,10 +666,10 @@ const Index = () => {
                                   <p className="text-lg font-bold text-green-600">{item.price}</p>
                                   <div className="flex gap-2">
                                     {item.sizes.map(size => (
-                                      <Button
-                                        key={size}
+                              <Button
+                                key={size}
                                         variant={item.selectedSize === size ? "default" : "outline"}
-                                        size="sm"
+                                size="sm"
                                         onClick={() => {
                                           setSelectedItems(prev => prev.map((prevItem, i) => 
                                             i === index ? { ...prevItem, selectedSize: size } : prevItem
@@ -680,11 +680,11 @@ const Index = () => {
                                             ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg scale-105' 
                                             : 'bg-white text-blue-600 border-gray-300 hover:bg-gray-50'
                                         }`}
-                                      >
-                                        {size}
-                                      </Button>
-                                    ))}
-                                  </div>
+                              >
+                                {size}
+                              </Button>
+                            ))}
+                          </div>
                                 </div>
                               </div>
                             </CardContent>
@@ -694,13 +694,13 @@ const Index = () => {
                       
                       {/* Continue Button */}
                       <div className="flex gap-3 pt-4">
-                        <Button 
+                          <Button 
                           onClick={() => setShowSizeModal(true)}
                           disabled={selectedItems.length === 0}
                           className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300"
-                        >
+                          >
                           Continue to Photo Upload ({selectedItems.length} items)
-                        </Button>
+                          </Button>
                       </div>
                     </div>
                   )}
@@ -819,7 +819,7 @@ const Index = () => {
                         <div className="text-right">
                           <div className="text-4xl font-bold">{analysisResult?.fitScore || 75}%</div>
                           <div className="text-sm opacity-90">Outfit Rating</div>
-                        </div>
+                    </div>
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
@@ -945,7 +945,7 @@ const Index = () => {
                         })()}
                       </div>
                     </div>
-                  </div>
+                        </div>
                   <Separator className="my-6 bg-gray-200" />
                   {/* Virtual Overlay */}
                   <div className="space-y-3">
@@ -990,7 +990,7 @@ const Index = () => {
                         </p>
                       </div>
                     </div>
-                  </div>
+                      </div>
                   
                   {/* Action Buttons */}
                   <div className="flex gap-3 pt-6">
@@ -999,7 +999,7 @@ const Index = () => {
                       className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl py-3"
                     >
                       Return to Dashboard
-                    </Button>
+                  </Button>
                     <Button 
                       onClick={() => {
                         setCurrentStep(1);
