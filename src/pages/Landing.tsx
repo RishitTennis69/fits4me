@@ -142,7 +142,7 @@ const Landing = () => {
             </div>
 
             {/* Right side - App visualization */}
-            <div className="relative flex justify-center lg:justify-end">
+            <div className="relative flex justify-center lg:justify-start">
               {/* Phone frame */}
               <div className="relative w-80 h-[600px] bg-gray-900 rounded-[3rem] p-3 shadow-2xl">
                 {/* Screen */}
@@ -221,10 +221,6 @@ const Landing = () => {
                 {/* Home indicator */}
                 <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gray-400 rounded-full"></div>
               </div>
-
-              {/* Floating elements for visual appeal */}
-              <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full opacity-20 animate-pulse"></div>
-              <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-20 animate-pulse delay-1000"></div>
             </div>
           </div>
         </div>

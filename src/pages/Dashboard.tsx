@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Shirt, 
@@ -14,7 +13,6 @@ import {
   Eye, 
   ThumbsUp, 
   MessageCircle,
-  Link as LinkIcon,
   Target,
   CheckCircle,
   AlertCircle,
@@ -42,10 +40,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
   const [fitAnalyses, setFitAnalyses] = useState<FitAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newClothingUrl, setNewClothingUrl] = useState('');
-  const [newPreferredSize, setNewPreferredSize] = useState('M');
-  const [isCreating, setIsCreating] = useState(false);
+  const navigate = useNavigate();
 
   const fetchUserAnalyses = async (userId: string) => {
     try {
@@ -131,15 +126,6 @@ const Dashboard = () => {
   };
 
   const handleCreateNew = async () => {
-    if (!newClothingUrl.trim()) {
-      toast({
-        title: "URL Required",
-        description: "Please enter a clothing item URL",
-        variant: "destructive"
-      });
-      return;
-    }
-
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -149,55 +135,7 @@ const Dashboard = () => {
       return;
     }
 
-    setIsCreating(true);
-    try {
-      // Extract clothing name from URL (basic implementation)
-      const url = new URL(newClothingUrl);
-      const clothingName = url.hostname.replace('www.', '').split('.')[0] + ' Item';
-      
-      // Create new analysis record
-      const { data, error } = await supabase
-        .from('fit_analyses')
-        .insert({
-          user_id: user.id,
-          clothing_name: clothingName,
-          clothing_url: newClothingUrl,
-          preferred_size: newPreferredSize,
-          fit_score: Math.floor(Math.random() * 40) + 60, // Random score between 60-100 for demo
-          recommendation: 'Analysis in progress...',
-          overlay_image: null,
-          likes: 0,
-          comments: 0,
-          views: 0
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      // Refresh the analyses list
-      await fetchUserAnalyses(user.id);
-      
-      toast({
-        title: "Analysis Created",
-        description: "Your new fit analysis has been added to your dashboard!",
-      });
-      
-      setShowCreateModal(false);
-      setNewClothingUrl('');
-      setNewPreferredSize('M');
-    } catch (error) {
-      console.error('Error creating analysis:', error);
-      toast({
-        title: "Analysis Failed",
-        description: "Failed to create the analysis. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsCreating(false);
-    }
+    navigate('/app');
   };
 
   const formatDate = (dateString: string) => {
@@ -243,7 +181,7 @@ const Dashboard = () => {
               </span>
             </div>
             <Button 
-              onClick={() => setShowCreateModal(true)}
+              onClick={handleCreateNew}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-2xl px-6 py-2"
             >
               <Plus className="h-5 w-5 mr-2" />
@@ -350,7 +288,7 @@ const Dashboard = () => {
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Fit Analyses Yet</h3>
             <p className="text-gray-600 mb-6">Start by creating your first fit analysis to see recommendations here.</p>
             <Button 
-              onClick={() => setShowCreateModal(true)}
+              onClick={handleCreateNew}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-2xl px-6 py-3"
             >
               <Plus className="h-5 w-5 mr-2" />
@@ -359,86 +297,6 @@ const Dashboard = () => {
           </div>
         )}
       </div>
-
-      {/* Create New Analysis Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-gray-200 rounded-3xl p-8 max-w-md w-full shadow-xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Create New Analysis
-              </h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCreateModal(false)}
-                className="text-gray-400 hover:text-gray-600 rounded-xl"
-              >
-                ✕
-              </Button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="clothing-url" className="text-gray-700">Clothing Item URL</Label>
-                <Input
-                  id="clothing-url"
-                  type="url"
-                  placeholder="https://www.amazon.com/..."
-                  value={newClothingUrl}
-                  onChange={(e) => setNewClothingUrl(e.target.value)}
-                  className="mt-2 bg-white border-gray-300 text-gray-900 placeholder:text-gray-500 rounded-2xl"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="preferred-size" className="text-gray-700">Preferred Size</Label>
-                <select
-                  id="preferred-size"
-                  value={newPreferredSize}
-                  onChange={(e) => setNewPreferredSize(e.target.value)}
-                  className="mt-2 w-full bg-white border border-gray-300 text-gray-900 rounded-2xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="XS">XS</option>
-                  <option value="S">S</option>
-                  <option value="M">M</option>
-                  <option value="L">L</option>
-                  <option value="XL">XL</option>
-                  <option value="XXL">XXL</option>
-                </select>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-800">Using Stored Photo</span>
-                </div>
-                <p className="text-xs text-blue-700">
-                  We'll use your previously uploaded photo for this analysis. You can upload a new photo during the analysis process if needed.
-                </p>
-              </div>
-              
-              <Button 
-                onClick={handleCreateNew}
-                disabled={isCreating}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg py-3 rounded-2xl"
-              >
-                {isCreating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <LinkIcon className="h-5 w-5 mr-2" />
-                    Start Analysis
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
