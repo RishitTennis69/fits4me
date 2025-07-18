@@ -73,43 +73,58 @@ const Wardrobe = () => {
     }
   };
 
+  // Remove auto-analysis from handlePhotoUpload
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = async (e) => {
+      reader.onload = (e) => {
         const photoUrl = e.target?.result as string;
         setNewItemPhoto(photoUrl);
-        
-        // Auto-analyze the photo
-        setIsAnalyzing(true);
-        try {
-          const { data, error } = await supabase.functions.invoke('wardrobe-management', {
-            body: { 
-              action: 'analyze_photo',
-              itemData: { photoUrl }
-            }
-          });
-
-          if (error) throw error;
-
-          if (data.success && data.analysis) {
-            setAiAnalysis(data.analysis);
-            setNewItemData(prev => ({
-              ...prev,
-              name: data.analysis.description || '',
-              category: data.analysis.category || '',
-              color: data.analysis.color || '',
-              size: data.analysis.estimatedSize || ''
-            }));
-          }
-        } catch (error) {
-          console.error('Error analyzing photo:', error);
-        } finally {
-          setIsAnalyzing(false);
-        }
+        setAiAnalysis(null); // Reset previous analysis
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  // Add manual analysis trigger
+  const handleAnalyzePhoto = async () => {
+    if (!newItemPhoto) {
+      toast({
+        title: "Photo Required",
+        description: "Please upload a photo before analyzing.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsAnalyzing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('wardrobe-management', {
+        body: { 
+          action: 'analyze_photo',
+          itemData: { photoUrl: newItemPhoto }
+        }
+      });
+      if (error) throw error;
+      if (data.success && data.analysis) {
+        setAiAnalysis(data.analysis);
+        setNewItemData(prev => ({
+          ...prev,
+          name: data.analysis.description || '',
+          category: data.analysis.category || '',
+          color: data.analysis.color || '',
+          size: data.analysis.estimatedSize || ''
+        }));
+      }
+    } catch (error) {
+      console.error('Error analyzing photo:', error);
+      toast({
+        title: "Error",
+        description: `Failed to analyze photo: ${error.message || error}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -291,6 +306,23 @@ const Wardrobe = () => {
                             Take New Photo
                           </Button>
                         </div>
+                        {/* Analyze Button */}
+                        {!aiAnalysis && (
+                          <Button
+                            onClick={handleAnalyzePhoto}
+                            disabled={isAnalyzing}
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 mt-2"
+                          >
+                            {isAnalyzing ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                                Analyzing...
+                              </>
+                            ) : (
+                              'Analyze Photo with AI'
+                            )}
+                          </Button>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-4">
