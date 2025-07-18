@@ -58,12 +58,14 @@ const Wardrobe = () => {
 
       if (data.success) {
         setWardrobeItems(data.items);
+      } else if (data.error) {
+        throw new Error(data.error);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading wardrobe items:', error);
       toast({
         title: "Error",
-        description: "Failed to load wardrobe items",
+        description: `Failed to load wardrobe items: ${error.message || error}`,
         variant: "destructive"
       });
     } finally {
