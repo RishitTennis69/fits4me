@@ -146,7 +146,7 @@ const Landing = () => {
             <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-500 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
               Why Choose Fits4Me?
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl max-w-2xl mx-auto" style={{ color: '#C8A2C8' }}>
               Advanced AI technology that understands your body and clothing fit like never before
             </p>
           </div>
@@ -204,7 +204,7 @@ const Landing = () => {
             <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-500 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
               How It Works
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl max-w-2xl mx-auto" style={{ color: '#C8A2C8' }}>
               Three simple steps to perfect fit recommendations
             </p>
           </div>
