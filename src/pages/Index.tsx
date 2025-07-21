@@ -340,10 +340,7 @@ const Index = () => {
 
       // Set the analysis results
       setAnalysisResult({
-        fitScore: analysisResult.analysis?.fitScore || Math.floor(Math.random() * 40) + 60,
-        recommendation: analysisResult.analysis?.recommendation || 'Fit analysis completed successfully.',
-        sizeAdvice: analysisResult.analysis?.sizeAdvice || 'Size recommendation available.',
-        overlay: analysisResult.overlay || userData.photo
+        ...analysisResult
       });
       
       // Show results in a popup/modal
@@ -352,6 +349,7 @@ const Index = () => {
         title: "Analysis Complete",
         description: "Your fit analysis is ready! Check the results below.",
       });
+      setCurrentStep(3); // Move to step 3 only after analysis is done
     } catch (error) {
       console.error('Error analyzing fit:', error);
       toast({
@@ -414,18 +412,15 @@ const Index = () => {
 
       // Set the analysis results for multi-item
       setAnalysisResult({
-        fitScore: analysisResult.overallFitScore || Math.floor(Math.random() * 40) + 60,
-        recommendation: analysisResult.outfitRecommendation || 'Outfit analysis completed successfully.',
-        sizeAdvice: analysisResult.individualScores?.map(score => `${score.recommendation}`).join(' ') || 'Size recommendations available.',
-        overlay: analysisResult.combinedOverlay || userData.photo
+        ...analysisResult
       });
       
       // Move to results step
-      setCurrentStep(3);
       toast({
         title: "Outfit Analysis Complete",
         description: "Your outfit analysis is ready! Check the results below.",
       });
+      setCurrentStep(3); // Move to step 3 only after analysis is done
     } catch (error) {
       console.error('Error analyzing outfit:', error);
       toast({
