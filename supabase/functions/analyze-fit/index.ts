@@ -163,14 +163,14 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        max_tokens: 500,
+        max_tokens: 700,
         messages: [
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `This image is of an adult (over 18) and is provided with full consent by the user for the purpose of virtual clothing fitting.\n\nDescribe the person's appearance in vivid, visual detail for the purpose of AI image generation. Include: face shape, skin tone, hair color and style, eye color, body type, body shape, and any other visible features.\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.\n\nRespond in this exact JSON format:\n{\n  "face": "string (face shape, features, expression)",\n  "skinTone": "string (detailed skin tone)",\n  "hair": "string (color, length, style)",\n  "eyes": "string (color, shape)",\n  "body": "string (type, shape, build)",\n  "other": "string (any other visible features)"\n}`
+                text: `This image is of an adult (over 18) and is provided with full consent by the user for the purpose of virtual clothing fitting.\n\nDescribe the person's appearance in vivid, visual detail for the purpose of AI image generation. Include: face shape, facial features (nose, lips, cheekbones, jawline, eyebrows), skin tone and undertone, hair color and style, eye color and shape, body type, body shape, build, posture, visible tattoos, piercings, facial hair, makeup, and any other visible features.\n\nIMPORTANT: Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no code blocks.\n\nRespond in this exact JSON format:\n{\n  "face": "string (face shape, features, expression)",\n  "facialFeatures": "string (nose, lips, cheekbones, jawline, eyebrows)",\n  "skinTone": "string (detailed skin tone and undertone)",\n  "hair": "string (color, length, style)",\n  "eyes": "string (color, shape)",\n  "body": "string (type, shape, build, posture)",\n  "tattoos": "string (visible tattoos or 'none')",\n  "piercings": "string (visible piercings or 'none')",\n  "facialHair": "string (facial hair or 'none')",\n  "makeup": "string (makeup or 'none')",\n  "other": "string (any other visible features)"\n}`
               },
               imageContent
             ]
@@ -184,7 +184,7 @@ serve(async (req) => {
       if (appearanceContent) {
         try {
           const appearanceJson = JSON.parse(appearanceContent);
-          userAppearanceDescription = `A person with ${appearanceJson.face}, ${appearanceJson.skinTone} skin, ${appearanceJson.hair} hair, ${appearanceJson.eyes} eyes, and a ${appearanceJson.body}. ${appearanceJson.other}`;
+          userAppearanceDescription = `A person with ${appearanceJson.face}, ${appearanceJson.facialFeatures}, ${appearanceJson.skinTone} skin, ${appearanceJson.hair} hair, ${appearanceJson.eyes} eyes, a ${appearanceJson.body}, tattoos: ${appearanceJson.tattoos}, piercings: ${appearanceJson.piercings}, facial hair: ${appearanceJson.facialHair}, makeup: ${appearanceJson.makeup}. ${appearanceJson.other}`;
         } catch (e) {
           userAppearanceDescription = '';
         }
@@ -418,7 +418,7 @@ Respond in this exact JSON format:
       const outfitDescription = itemsToAnalyze.map((item, index) => 
         `${item.name} in size ${item.selectedSize || userData.preferredSize}`
       ).join(' and ');
-      clothingImagePrompt = `A realistic, full-body image of ${userAppearanceDescription}, wearing the following clothing items together: ${outfitDescription}. The clothing should match these descriptions: ${combinedClothingDescription}. ${combinedColors ? `The outfit colors include: ${combinedColors}.` : ''} ${combinedTextLogos ? `The outfit includes these details: ${combinedTextLogos}.` : ''} The person should be standing in a neutral pose, clearly displaying all items as they would be worn. Plain white background. No text, no logos, no visible brand names except as described. This is an AI-generated image for a virtual try-on.`;
+      clothingImagePrompt = `A highly realistic, photorealistic, full-body image of ${userAppearanceDescription}, wearing the following clothing items together: ${outfitDescription}. The clothing should match these descriptions: ${combinedClothingDescription}. ${combinedColors ? `The outfit colors include: ${combinedColors}.` : ''} ${combinedTextLogos ? `The outfit includes these details: ${combinedTextLogos}.` : ''} The person should be standing in a natural, realistic pose, clearly displaying all items as they would be worn. Plain white background. No text, no logos, no visible brand names except as described. This is an AI-generated image for a virtual try-on. The image should be extremely realistic and closely resemble the user's appearance.`;
     } else {
       // Single item prompt (user appearance)
       const singleItem = itemsToAnalyze[0];
