@@ -164,6 +164,21 @@ const Index = () => {
     checkUser();
   }, []);
 
+  // After clothing item(s) are selected, if userData.photo exists, skip to analysis
+  useEffect(() => {
+    if (currentStep === 1 && selectedItems.length > 0 && userData.photo) {
+      // For multi-item, run handlePhotoAnalysis; for single, run handleQuickAnalyze
+      if (isMultiItemMode) {
+        setCurrentStep(3);
+        handlePhotoAnalysis();
+      } else {
+        setCurrentStep(3);
+        handleQuickAnalyze();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, selectedItems, userData.photo, isMultiItemMode]);
+
   const loadWardrobeItems = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('wardrobe-management', {
@@ -708,7 +723,7 @@ const Index = () => {
             </Card>
             </div>
           )}
-          {currentStep === 2 && (
+          {currentStep === 2 && !userData.photo && (
             <div className="w-full max-w-2xl animate-fade-in-up">
             {/* Step 2: Photo Upload */}
               <Card className="bg-white border-gray-200 p-10 text-lg shadow-lg">
@@ -761,22 +776,22 @@ const Index = () => {
                       <div className="space-y-2 mt-4">
                         <img src={userData.photo} alt="Your photo" className="max-h-32 mx-auto rounded-xl shadow-lg border-4 border-green-300" />
                         <p className="text-base text-green-600 font-semibold">Photo uploaded!</p>
-                        <Button 
-                          onClick={handlePhotoAnalysis}
-                          disabled={isAnalyzing}
+                        {/* Save photo to Supabase if not already saved */}
+                        <Button
+                          onClick={async () => {
+                            if (user) {
+                              await saveUserPhoto(userData.photo);
+                            }
+                            setCurrentStep(isMultiItemMode ? 3 : 3);
+                            if (isMultiItemMode) {
+                              handlePhotoAnalysis();
+                            } else {
+                              handleQuickAnalyze();
+                            }
+                          }}
                           className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-lg py-3 rounded-xl shadow-xl transition-all duration-300 mt-4"
                         >
-                          {isAnalyzing ? (
-                            <>
-                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2" />
-                              Analyzing Fit...
-                            </>
-                          ) : (
-                            <>
-                              <Shirt className="h-5 w-5 mr-2" />
-                              Analyze Fit
-                            </>
-                          )}
+                          Continue to Analysis
                         </Button>
                       </div>
                     ) : (
@@ -796,7 +811,7 @@ const Index = () => {
                 </div>
               </CardContent>
             </Card>
-            </div>
+          </div>
           )}
           {currentStep === 3 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
@@ -804,144 +819,46 @@ const Index = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-green-600">
                     <CheckCircle className="h-6 w-6 text-green-500" />
-                    Step 3: Outfit Analysis & Results
+                    Step 3: Fit Analysis Results
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-8">
-                  {/* Fit Score Display */}
+                  {/* Individual Item Scores */}
                   <div className="space-y-4">
-                    <h4 className="font-semibold text-lg text-blue-600">Outfit Analysis Results</h4>
-                    
-                    {/* Overall Fit Score */}
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 p-6 rounded-2xl text-white shadow-xl">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-2xl font-bold">Overall Fit Score</h3>
-                        <div className="text-right">
-                          <div className="text-4xl font-bold">{analysisResult?.fitScore || 75}%</div>
-                          <div className="text-sm opacity-90">Outfit Rating</div>
-                    </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>Individual Items</span>
-                          <span>{selectedItems.length} items analyzed</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Individual Item Scores */}
-                    {selectedItems.length > 1 && (
-                      <div className="space-y-3">
-                        <h5 className="font-semibold text-gray-700">Individual Item Scores</h5>
-                        {selectedItems.map((item, index) => {
-                          const itemScore = analysisResult?.individualScores?.find(score => score.itemId === item.id)?.fitScore || 75;
-                          return (
-                            <div key={item.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-3">
-                                  <img src={item.images[0]} alt={item.name} className="w-12 h-12 object-cover rounded-lg" />
-                                  <div>
-                                    <p className="font-semibold text-gray-900">{item.name}</p>
-                                    <p className="text-sm text-gray-500">Size {item.selectedSize}</p>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-xl font-bold text-blue-600">{itemScore}%</div>
-                                  <div className="text-xs text-gray-500">Fit Score</div>
-                                </div>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
-                                <div 
-                                  className={`h-2 rounded-full transition-all duration-500 ${
-                                    itemScore >= 80 ? 'bg-green-500' : 
-                                    itemScore >= 70 ? 'bg-blue-500' : 
-                                    itemScore >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                                  }`}
-                                  style={{ width: `${itemScore}%` }}
-                                />
+                    <h4 className="font-semibold text-lg text-blue-600">Garment Fit Scores</h4>
+                    {selectedItems.map((item, index) => {
+                      const itemScore = analysisResult?.individualScores?.find(score => score.itemName === item.name)?.fitScore || 75;
+                      return (
+                        <div key={item.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm mb-2">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <img src={item.images[0]} alt={item.name} className="w-12 h-12 object-cover rounded-lg" />
+                              <div>
+                                <p className="font-semibold text-gray-900">{item.name}</p>
+                                <p className="text-sm text-gray-500">Size {item.selectedSize}</p>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    
-                    {/* Fit Score Guide */}
-                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                      <h5 className="font-semibold text-gray-700 mb-3">Fit Score Guide</h5>
-                      <div className="space-y-2">
-                        {(() => {
-                          const score = analysisResult?.fitScore || 75;
-                          if (score >= 90) {
-                            return (
-                              <div className="bg-green-100 p-3 rounded-lg border border-green-200">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <CheckCircle className="h-5 w-5 text-green-600" />
-                                  <span className="font-bold text-green-800">90-100%: Perfect Outfit</span>
-                                </div>
-                                <p className="text-sm text-green-700">
-                                  This outfit will fit you <strong>perfectly</strong>. All items work together excellently and match your body proportions. 
-                                  <strong>Definitely buy this outfit</strong> - you'll look amazing!
-                                </p>
-                              </div>
-                            );
-                          } else if (score >= 80) {
-                            return (
-                              <div className="bg-blue-100 p-3 rounded-lg border border-blue-200">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <CheckCircle className="h-5 w-5 text-blue-600" />
-                                  <span className="font-bold text-blue-800">80-89%: Excellent Outfit</span>
-                                </div>
-                                <p className="text-sm text-blue-700">
-                                  This outfit will fit you <strong>very well</strong>. All items complement each other and should fit excellently. 
-                                  <strong>Highly recommended to buy</strong> - you'll likely be very satisfied with the complete look.
-                                </p>
-                              </div>
-                            );
-                          } else if (score >= 70) {
-                            return (
-                              <div className="bg-yellow-100 p-3 rounded-lg border border-yellow-200">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <AlertCircle className="h-5 w-5 text-yellow-600" />
-                                  <span className="font-bold text-yellow-800">70-79%: Good Outfit</span>
-                                </div>
-                                <p className="text-sm text-yellow-700">
-                                  This outfit should fit you <strong>well</strong>. Most items work together and are suitable for your body type. 
-                                  <strong>Recommended to buy</strong>, but you might want to try on first if possible.
-                                </p>
-                              </div>
-                            );
-                          } else if (score >= 50) {
-                            return (
-                              <div className="bg-orange-100 p-3 rounded-lg border border-orange-200">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <AlertCircle className="h-5 w-5 text-orange-600" />
-                                  <span className="font-bold text-orange-800">50-69%: Moderate Outfit</span>
-                                </div>
-                                <p className="text-sm text-orange-700">
-                                  This outfit may fit you <strong>adequately</strong>. Some items might need adjustments or don't work well together. 
-                                  <strong>Consider trying on first</strong> - the overall look might be acceptable but not ideal.
-                                </p>
-                              </div>
-                            );
-                          } else {
-                            return (
-                              <div className="bg-red-100 p-3 rounded-lg border border-red-200">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <X className="h-5 w-5 text-red-600" />
-                                  <span className="font-bold text-red-800">0-49%: Poor Outfit</span>
-                                </div>
-                                <p className="text-sm text-red-700">
-                                  This outfit is <strong>not recommended</strong>. Multiple items don't fit well or don't work together. 
-                                  <strong>Don't buy this combination</strong> - consider different items or sizes for a better overall look.
-                                </p>
-                              </div>
-                            );
-                          }
-                        })()}
-                      </div>
-                    </div>
+                            <div className="text-right">
+                              <div className="text-xl font-bold text-blue-600">{itemScore}%</div>
+                              <div className="text-xs text-gray-500">Fit Score</div>
+                            </div>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-500 ${
+                                itemScore >= 80 ? 'bg-green-500' : 
+                                itemScore >= 70 ? 'bg-blue-500' : 
+                                itemScore >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                              }`}
+                              style={{ width: `${itemScore}%` }}
+                            />
+                          </div>
                         </div>
+                      );
+                    })}
+                  </div>
+                  {/* Remove Fit Score Guide and overall fit score display */}
+                  {/* Virtual Overlay and Recommendation sections remain unchanged */}
                   <Separator className="my-6 bg-gray-200" />
                   {/* Virtual Overlay */}
                   <div className="space-y-3">
@@ -952,7 +869,7 @@ const Index = () => {
                       {/* DALL·E Link Instead of Image */}
                       {(() => {
                         const dalleUrl = selectedItems.length > 1 ? analysisResult?.combinedOverlay : analysisResult?.overlay;
-                        console.log('DALL·E URL:', dalleUrl);
+                        console.log('DALL·E URL (frontend):', dalleUrl);
                         if (dalleUrl) {
                           return (
                             <a href={dalleUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
