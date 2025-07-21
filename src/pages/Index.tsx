@@ -83,7 +83,6 @@ const Index = () => {
   const [selectedItems, setSelectedItems] = useState<ClothingData[]>([]);
   const [isMultiItemMode, setIsMultiItemMode] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [hasStoredPhoto, setHasStoredPhoto] = useState(false);
   const [wardrobeItems, setWardrobeItems] = useState<any[]>([]);
   const [showWardrobeModal, setShowWardrobeModal] = useState(false);
   const [selectedWardrobeItem, setSelectedWardrobeItem] = useState<any>(null);
@@ -149,7 +148,6 @@ const Index = () => {
             .single();
           
           if (!error && profile?.photo_url) {
-            setHasStoredPhoto(true);
             setUserData(prev => ({ ...prev, photo: profile.photo_url }));
           }
           
@@ -165,19 +163,7 @@ const Index = () => {
   }, []);
 
   // After clothing item(s) are selected, if userData.photo exists, skip to analysis
-  useEffect(() => {
-    if (currentStep === 1 && selectedItems.length > 0 && userData.photo) {
-      // For multi-item, run handlePhotoAnalysis; for single, run handleQuickAnalyze
-      if (isMultiItemMode) {
-        setCurrentStep(3);
-        handlePhotoAnalysis();
-      } else {
-        setCurrentStep(3);
-        handleQuickAnalyze();
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, selectedItems, userData.photo, isMultiItemMode]);
+  // Remove the useEffect that skips step 2 if userData.photo exists
 
   const loadWardrobeItems = async () => {
     try {
@@ -192,46 +178,6 @@ const Index = () => {
       }
     } catch (error) {
       console.error('Error loading wardrobe items:', error);
-    }
-  };
-
-  const saveUserPhoto = async (photoUrl: string) => {
-    if (!user) return;
-    
-    try {
-      // First, check if user profile exists
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 is "not found"
-        throw checkError;
-      }
-      
-      // Upsert the profile with photo
-      const { error } = await supabase
-        .from('user_profiles')
-        .upsert({
-          user_id: user.id,
-          photo_url: photoUrl,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        });
-      
-      if (error) throw error;
-      
-      setHasStoredPhoto(true);
-      console.log('Photo saved successfully to database');
-    } catch (error) {
-      console.error('Error saving user photo:', error);
-      toast({
-        title: "Warning",
-        description: "Could not save your photo for future use, but analysis will continue.",
-        variant: "destructive"
-      });
     }
   };
 
@@ -332,11 +278,6 @@ const Index = () => {
       reader.onload = async (e) => {
         const photoUrl = e.target?.result as string;
         setUserData(prev => ({ ...prev, photo: photoUrl }));
-        
-        // Save photo for authenticated users
-        if (user) {
-          await saveUserPhoto(photoUrl);
-        }
         
         toast({
           title: "Photo Uploaded",
@@ -723,7 +664,7 @@ const Index = () => {
             </Card>
             </div>
           )}
-          {currentStep === 2 && !userData.photo && (
+          {currentStep === 2 && (
             <div className="w-full max-w-2xl animate-fade-in-up">
             {/* Step 2: Photo Upload */}
               <Card className="bg-white border-gray-200 p-10 text-lg shadow-lg">
@@ -780,7 +721,7 @@ const Index = () => {
                         <Button
                           onClick={async () => {
                             if (user) {
-                              await saveUserPhoto(userData.photo);
+                              // This part is removed as per the edit hint
                             }
                             setCurrentStep(isMultiItemMode ? 3 : 3);
                             if (isMultiItemMode) {
