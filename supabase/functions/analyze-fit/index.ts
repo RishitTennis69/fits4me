@@ -196,14 +196,21 @@ serve(async (req) => {
 1. An individual fit score (0-100) for each item, with a brief reason
 2. A recommendation for each item (e.g., fits well, too tight, too loose, consider another size)
 3. IMPORTANT: Do NOT comment on style, color, or whether the items look good together. Do NOT judge outfit compatibility, color harmony, or style cohesion. Only analyze fit.
-4. A comprehensive JSON response with this structure:
+4. Provide SPECIFIC fit feedback about which body parts are problematic:
+   - For tops/shirts: mention shoulders, chest, waist, arms, length if too short/long
+   - For pants/jeans: mention waist, hips, thighs, length, inseam if too short/long
+   - For dresses: mention shoulders, bust, waist, hips, length
+   - For jackets: mention shoulders, chest, arms, length
+   - Use specific terms like "shoulders too tight", "waist too loose", "arms too short", "chest too small", etc.
+5. A comprehensive JSON response with this structure:
 {
   "individualScores": [
     {
       "itemName": string,
       "fitScore": number,
       "reason": string,
-      "recommendation": string
+      "recommendation": string,
+      "specificFitIssues": string
     }
   ]
 }
@@ -258,6 +265,7 @@ Respond with ONLY valid JSON. No extra text, no markdown, no explanations, no co
       fitScore: number;
       reason: string;
       recommendation: string;
+      specificFitIssues: string;
     }> = [];
     if (aiFitScores && typeof aiFitScores === 'object' && aiFitScores !== null) {
       if (Array.isArray((aiFitScores as any).individualScores)) {

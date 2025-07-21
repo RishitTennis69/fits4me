@@ -66,6 +66,7 @@ interface AnalysisResult {
     alternativeSize?: string;
     fitDetails: string;
     measurementComparison: string;
+    specificFitIssues: string;
   }[];
   outfitRecommendation?: string;
   outfitCompatibility?: {
@@ -718,7 +719,6 @@ const Index = () => {
                             if (user) {
                               // This part is removed as per the edit hint
                             }
-                            setCurrentStep(isMultiItemMode ? 3 : 3);
                             if (isMultiItemMode) {
                               handlePhotoAnalysis();
                             } else {
@@ -764,6 +764,7 @@ const Index = () => {
                     <h4 className="font-semibold text-lg text-blue-600">Garment Fit Scores</h4>
                     {selectedItems.map((item, index) => {
                       const itemScore = analysisResult?.individualScores?.find(score => score.itemName === item.name)?.fitScore || 75;
+                      const itemAnalysis = analysisResult?.individualScores?.find(score => score.itemName === item.name);
                       return (
                         <div key={item.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm mb-2">
                           <div className="flex items-center justify-between mb-2">
@@ -779,7 +780,7 @@ const Index = () => {
                               <div className="text-xs text-gray-500">Fit Score</div>
                             </div>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
                             <div 
                               className={`h-2 rounded-full transition-all duration-500 ${
                                 itemScore >= 80 ? 'bg-green-500' : 
@@ -789,6 +790,26 @@ const Index = () => {
                               style={{ width: `${itemScore}%` }}
                             />
                           </div>
+                          {/* Specific Fit Issues */}
+                          {itemAnalysis?.specificFitIssues && (
+                            <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                              <div className="flex items-start gap-2">
+                                <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <p className="text-sm font-semibold text-orange-800 mb-1">Fit Issues:</p>
+                                  <p className="text-sm text-orange-700">{itemAnalysis.specificFitIssues}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {/* Recommendation */}
+                          {itemAnalysis?.recommendation && (
+                            <div className="mt-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                              <p className="text-sm text-blue-700">
+                                <span className="font-semibold">Recommendation:</span> {itemAnalysis.recommendation}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -808,16 +829,28 @@ const Index = () => {
                         console.log('DALL·E URL (frontend):', dalleUrl);
                         if (dalleUrl) {
                           return (
-                            <a href={dalleUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
-                              View DALL·E Virtual Try-On Image
-                            </a>
+                            <div className="relative z-10 text-center">
+                              <a 
+                                href={dalleUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold text-lg shadow-lg transition-all duration-300 hover:scale-105 break-all"
+                              >
+                                🔗 View DALL·E Virtual Try-On Image
+                              </a>
+                              <p className="text-sm text-gray-600 mt-2">Click to open in new tab</p>
+                            </div>
                           );
                         } else {
-                          return <span className="text-gray-500">No virtual try-on image available.</span>;
+                          return (
+                            <div className="relative z-10 text-center">
+                              <span className="text-gray-500">No virtual try-on image available.</span>
+                            </div>
+                          );
                         }
                       })()}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl" />
-                      <Badge className="absolute top-3 right-3 bg-green-600 text-white px-4 py-2 rounded-full shadow-lg text-base">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl pointer-events-none" />
+                      <Badge className="absolute top-3 right-3 bg-green-600 text-white px-4 py-2 rounded-full shadow-lg text-base z-20">
                         {selectedItems.length > 1 ? `${selectedItems.length} Items` : `Size ${userData.preferredSize}`}
                       </Badge>
                     </div>
